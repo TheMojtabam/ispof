@@ -1,0 +1,155 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build and release (e.g. v1.14.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: linux
+            goarch: arm
+            goarm: 7
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: resolve version
+        id: ver
+        run: echo "name=${{ github.event.inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+
+      - name: build tunnel + panel
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
+          CGO_ENABLED: 0
+          VERSION: ${{ steps.ver.outputs.name }}
+        run: |
+          SUFFIX="${GOOS}-${GOARCH}"
+          [ -n "${GOARM}" ] && SUFFIX="${SUFFIX}v${GOARM}"
+          LDFLAGS="-s -w -X main.Version=${VERSION} -X main.Commit=$(git rev-parse --short HEAD) -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          go build -ldflags "${LDFLAGS}" -o "quiccochet-${SUFFIX}"      ./cmd/quiccochet/
+          go build -ldflags "${LDFLAGS}" -o "qcc-panel-${SUFFIX}"       ./cmd/qcc-panel/
+
+          mkdir -p "bundle/quiccochet-${SUFFIX}"
+          cp "quiccochet-${SUFFIX}"  "bundle/quiccochet-${SUFFIX}/quiccochet"
+          cp "qcc-panel-${SUFFIX}"   "bundle/quiccochet-${SUFFIX}/qcc-panel"
+          cp scripts/install.sh      "bundle/quiccochet-${SUFFIX}/install.sh"
+          cp README.md PANEL.md OFFLINE-INSTALL.md "bundle/quiccochet-${SUFFIX}/" 2>/dev/null || true
+          cp server-config.json.example client-config.json.example  "bundle/quiccochet-${SUFFIX}/" 2>/dev/null || true
+          chmod +x "bundle/quiccochet-${SUFFIX}/quiccochet" \
+                   "bundle/quiccochet-${SUFFIX}/qcc-panel" \
+                   "bundle/quiccochet-${SUFFIX}/install.sh"
+
+          tar -C bundle -czf "quiccochet-${SUFFIX}.tar.gz" "quiccochet-${SUFFIX}"
+          ls -lah quiccochet-* qcc-panel-*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goarm && format('v{0}', matrix.goarm) || '' }}
+          path: |
+            quiccochet-*
+            qcc-panel-*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: checksums
+        run: |
+          sha256sum quiccochet-* qcc-panel-* > checksums.txt
+          ls -lah
+
+      - name: standalone install.sh in release root
+        run: cp scripts/install.sh install.sh
+
+      - name: write release notes
+        env:
+          VERSION: ${{ github.event.inputs.tag || github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          cat > release-notes.md <<EOF
+          ## نصب آنلاین (یک خطی روی سرور خارج)
+
+          \`\`\`bash
+          curl -fsSL https://github.com/${REPO}/releases/download/${VERSION}/install.sh \\
+            | sudo QCC_VERSION=${VERSION} bash -s -- install
+          \`\`\`
+
+          ## نصب آفلاین (سرور ایران بدون اینترنت)
+
+          روی کامپیوتری که اینترنت داره:
+          \`\`\`bash
+          wget https://github.com/${REPO}/releases/download/${VERSION}/quiccochet-linux-amd64.tar.gz
+          scp quiccochet-linux-amd64.tar.gz root@<IRAN_IP>:/tmp/
+          \`\`\`
+
+          روی سرور ایران (بدون اینترنت):
+          \`\`\`bash
+          cd /tmp
+          tar -xzf quiccochet-linux-amd64.tar.gz
+          cd quiccochet-linux-amd64
+          sudo QCC_SIDE=client ./install.sh install
+          \`\`\`
+
+          اسکریپت خودش متوجه می‌شه باینری‌ها کنارش هستن و دانلود رو رد می‌کنه.
+
+          مستندات کامل: \`OFFLINE-INSTALL.md\` در هر tarball.
+
+          ## آرشیوها
+
+          | فایل | معماری | شامل |
+          |------|--------|------|
+          | \`quiccochet-linux-amd64.tar.gz\` | x86_64 (اکثر VPS) | quiccochet + qcc-panel + install.sh |
+          | \`quiccochet-linux-arm64.tar.gz\` | ARM64 (Oracle, RPi 4/5) | quiccochet + qcc-panel + install.sh |
+          | \`quiccochet-linux-armv7.tar.gz\` | ARMv7 (RPi 2/3) | quiccochet + qcc-panel + install.sh |
+          | \`install.sh\` | اسکریپت نصب آنلاین | — |
+
+          ## تایید فایل‌ها
+          \`\`\`bash
+          sha256sum -c checksums.txt
+          \`\`\`
+          EOF
+
+      - name: create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          gh release create "${VERSION}" \
+            --repo "${{ github.repository }}" \
+            --notes-file release-notes.md \
+            quiccochet-* qcc-panel-* install.sh checksums.txt

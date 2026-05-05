@@ -1,0 +1,1901 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QUICochet · پنل سرور خارج</title>
+<link rel="stylesheet" href="panel-base.css">
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div class="login-shell" id="login">
+  <div class="login-card">
+    <div class="login-logo"><div class="logo-mark"></div></div>
+    <div class="login-title">QUICochet · سرور خارج</div>
+    <div class="login-sub">Foreign Exit Node Panel</div>
+    <div class="field">
+      <label class="field-label">نام کاربری</label>
+      <input class="input" id="login-user" value="admin"/>
+    </div>
+    <div class="field">
+      <label class="field-label">رمز عبور</label>
+      <input class="input" id="login-pass" type="password" value="••••••••"/>
+    </div>
+    <div class="field">
+      <label class="field-label">کد ۲FA (اختیاری)</label>
+      <input class="input" placeholder="------" maxlength="6"/>
+    </div>
+    <button class="btn primary" id="login-btn" style="width:100%;justify-content:center;padding:10px">ورود</button>
+    <div class="text-faint mono mt-3" style="font-size:10px;text-align:center">v0.4.1 · 5.75.x.x · uptime 12d 04h</div>
+  </div>
+</div>
+
+<div class="app">
+  <!-- ============ TOP BAR ============ -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark"></div>
+      <div class="logo-text">QUIC<span>ochet</span></div>
+    </div>
+    <div class="topbar-divider"></div>
+    <div class="breadcrumb">سرور خارج / <b id="bc-page">داشبورد</b></div>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-status">
+      <div class="status-pill"><div class="status-dot"></div><span>تونل وصل</span></div>
+      <div class="status-pill"><span class="text-faint">RTT</span><b>۳۸ms</b></div>
+      <div class="status-pill"><span class="text-faint">LOSS</span><b>۰.۰۲٪</b></div>
+      <div class="status-pill"><span class="text-faint">آپتایم</span><b>۱۲d ۰۴h</b></div>
+      <div class="user-chip"><div class="user-avatar">A</div><span class="mono" style="font-size:11px">admin</span></div>
+    </div>
+  </div>
+
+  <!-- ============ SIDEBAR ============ -->
+  <div class="sidebar">
+    <div class="sidebar-block">
+      <div class="server-pill">
+        <div class="server-pill-flag flag-de"></div>
+        <div class="server-pill-info">
+          <div class="server-pill-name">FRA-Edge-01</div>
+          <div class="server-pill-ip">5.75.182.40</div>
+        </div>
+        <div class="status-dot"></div>
+      </div>
+      <div class="server-pill">
+        <div class="server-pill-flag flag-ir"></div>
+        <div class="server-pill-info">
+          <div class="server-pill-name">TEH-Relay-01</div>
+          <div class="server-pill-ip">185.x.x.x</div>
+        </div>
+        <div class="status-dot"></div>
+      </div>
+    </div>
+
+    <div class="sidebar-block">
+      <div class="sidebar-block-title">اصلی</div>
+      <div class="nav-item active" data-page="dashboard">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+        <span>داشبورد</span>
+        <span class="nav-badge live">LIVE</span>
+      </div>
+      <div class="nav-item" data-page="tunnel">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="3" cy="8" r="2"/><circle cx="13" cy="8" r="2"/><path d="M5 8h6"/></svg>
+        <span>سرور تونل</span>
+      </div>
+      <div class="nav-item" data-page="iran">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2v12"/></svg>
+        <span>سرور ایران</span>
+        <span class="nav-badge live">۲</span>
+      </div>
+    </div>
+
+    <div class="sidebar-block">
+      <div class="sidebar-block-title">پروکسی</div>
+      <div class="nav-item" data-page="inbounds">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4l6 4 6-4M2 8l6 4 6-4"/></svg>
+        <span>Inbound های Xray</span>
+        <span class="nav-badge">۷</span>
+      </div>
+      <div class="nav-item" data-page="users">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3 3-5 6-5s6 2 6 5"/></svg>
+        <span>کاربران</span>
+        <span class="nav-badge">۴۲</span>
+      </div>
+      <div class="nav-item" data-page="subscription">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 6h12M5 9h2M5 11h4"/></svg>
+        <span>اشتراک‌ها</span>
+      </div>
+      <div class="nav-item" data-page="routing">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v3a3 3 0 003 3h4a3 3 0 013 3v1"/></svg>
+        <span>روتینگ</span>
+      </div>
+    </div>
+
+    <div class="sidebar-block">
+      <div class="sidebar-block-title">عملیات</div>
+      <div class="nav-item" data-page="logs">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M5 6h6M5 9h6M5 12h3"/></svg>
+        <span>لاگ‌ها</span>
+      </div>
+      <div class="nav-item" data-page="metrics">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14V2M2 14h12M5 11l3-4 2 2 4-5"/></svg>
+        <span>متریک‌ها</span>
+      </div>
+      <div class="nav-item" data-page="bench">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2"/><path d="M8 2v4M8 14v-2M2 8h4M14 8h-2"/></svg>
+        <span>بنچمارک</span>
+      </div>
+    </div>
+
+    <div class="sidebar-block">
+      <div class="sidebar-block-title">سیستم</div>
+      <div class="nav-item" data-page="security">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1l6 3v5c0 4-3 6-6 7-3-1-6-3-6-7V4l6-3z"/></svg>
+        <span>امنیت</span>
+      </div>
+      <div class="nav-item" data-page="backups">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 7h12M6 10h4"/></svg>
+        <span>پشتیبان‌گیری</span>
+      </div>
+      <div class="nav-item" data-page="notifications">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6a5 5 0 0110 0v3l1 2H2l1-2V6zM6 13a2 2 0 004 0"/></svg>
+        <span>اطلاع‌رسانی</span>
+      </div>
+      <div class="nav-item" data-page="settings">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/></svg>
+        <span>تنظیمات</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <div class="main-inner">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div class="page active" data-page="dashboard">
+        <div class="page-header">
+          <div>
+            <div class="page-title">داشبورد عملیات</div>
+            <div class="page-subtitle">$ status --realtime --both-ends</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn ghost btn-sm">رفرش</button>
+            <button class="btn">توقف تونل</button>
+            <button class="btn primary">اعمال تغییرات</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">↑ Upload</div>
+            <div class="stat-value" id="stat-up">۴۱۲.۷<span class="stat-value-unit">Mbps</span></div>
+            <div class="stat-trend">▲ ۸.۲٪ نسبت به ۵ دقیقه قبل</div>
+          </div>
+          <div class="stat-card cyan">
+            <div class="stat-label">↓ Download</div>
+            <div class="stat-value" id="stat-down">۳۸۷.۴<span class="stat-value-unit">Mbps</span></div>
+            <div class="stat-trend">▲ ۴.۱٪ نسبت به ۵ دقیقه قبل</div>
+          </div>
+          <div class="stat-card magenta">
+            <div class="stat-label">نشست‌های فعال</div>
+            <div class="stat-value">۱,۲۴۷</div>
+            <div class="stat-trend neutral">۴۲ کاربر آنلاین</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-label">Packet Loss</div>
+            <div class="stat-value">۰.۰۲<span class="stat-value-unit">%</span></div>
+            <div class="stat-trend">FEC جبران: ۸۴ پکت</div>
+          </div>
+        </div>
+
+        <div class="row c-2-1">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title"><div class="panel-title-dot"></div>نمودار پهنای‌باند · ۶۰s</div>
+              <div class="panel-actions">
+                <div class="chip-group" data-toggle-group>
+                  <div class="chip active">۶۰s</div>
+                  <div class="chip">۵m</div>
+                  <div class="chip">۱h</div>
+                  <div class="chip">۲۴h</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-body no-pad">
+              <div class="chart-wrapper">
+                <svg class="chart-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="grad-up" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#c4f542" stop-opacity="0.4"/>
+                      <stop offset="100%" stop-color="#c4f542" stop-opacity="0"/>
+                    </linearGradient>
+                    <linearGradient id="grad-dn" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#4dd4ff" stop-opacity="0.3"/>
+                      <stop offset="100%" stop-color="#4dd4ff" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <g stroke="#1f2937" stroke-width="0.5">
+                    <line x1="0" y1="40" x2="600" y2="40"/>
+                    <line x1="0" y1="80" x2="600" y2="80"/>
+                    <line x1="0" y1="120" x2="600" y2="120"/>
+                    <line x1="0" y1="160" x2="600" y2="160"/>
+                  </g>
+                  <path d="M0,120 L40,90 L80,80 L120,85 L160,55 L200,50 L240,55 L280,35 L320,30 L360,25 L400,30 L440,40 L480,35 L520,30 L560,25 L600,20 L600,200 L0,200 Z" fill="url(#grad-up)" stroke="#c4f542" stroke-width="1.5"/>
+                  <path d="M0,140 L40,125 L80,115 L120,120 L160,90 L200,85 L240,90 L280,70 L320,65 L360,60 L400,60 L440,70 L480,65 L520,60 L560,55 L600,50 L600,200 L0,200 Z" fill="url(#grad-dn)" stroke="#4dd4ff" stroke-width="1.5"/>
+                  <g fill="#3a475c" font-family="monospace" font-size="9">
+                    <text x="6" y="44">500M</text>
+                    <text x="6" y="84">375M</text>
+                    <text x="6" y="124">250M</text>
+                    <text x="6" y="164">125M</text>
+                  </g>
+                </svg>
+              </div>
+              <div class="chart-legend">
+                <div class="legend-item"><div class="legend-swatch" style="background:#c4f542"></div><span>↑ Upload</span><b class="text-acid">۴۱۲.۷ Mbps</b></div>
+                <div class="legend-item"><div class="legend-swatch" style="background:#4dd4ff"></div><span>↓ Download</span><b class="text-cyan">۳۸۷.۴ Mbps</b></div>
+                <div class="legend-item" style="margin-right:auto"><span class="text-faint">peak: ۴۸۷ / ۴۶۲</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>مشخصات تونل</div></div>
+            <div class="panel-body no-pad">
+              <div class="spec-grid">
+                <div class="spec"><div class="spec-key">Transport</div><div class="spec-val">UDP+spoof</div></div>
+                <div class="spec"><div class="spec-key">Obfuscation</div><div class="spec-val text-acid">standard</div></div>
+                <div class="spec"><div class="spec-key">Cipher</div><div class="spec-val">ChaCha20</div></div>
+                <div class="spec"><div class="spec-key">CC</div><div class="spec-val">BBR v1</div></div>
+                <div class="spec"><div class="spec-key">Pool</div><div class="spec-val">۸ conn</div></div>
+                <div class="spec"><div class="spec-key">MTU</div><div class="spec-val">۱۴۰۰</div></div>
+                <div class="spec"><div class="spec-key">Pacing</div><div class="spec-val">۴۵۰Mbps</div></div>
+                <div class="spec"><div class="spec-key">Spoof IPs</div><div class="spec-val">۱۲</div></div>
+              </div>
+              <div style="padding:12px 14px;border-top:1px solid var(--line)">
+                <div class="text-faint mono mb-2" style="font-size:10px;text-transform:uppercase">منابع سرور</div>
+                <div class="progress"><span class="progress-label">CPU</span><div class="progress-bar"><div class="progress-fill" style="width:34%"></div></div><span class="progress-value">۳۴٪</span></div>
+                <div class="progress"><span class="progress-label">RAM</span><div class="progress-bar"><div class="progress-fill cyan" style="width:18%"></div></div><span class="progress-value cyan">۱.۴G</span></div>
+                <div class="progress"><span class="progress-label">DISK</span><div class="progress-bar"><div class="progress-fill orange" style="width:42%"></div></div><span class="progress-value" style="color:var(--orange)">۴۲٪</span></div>
+                <div class="progress"><span class="progress-label">NET</span><div class="progress-bar"><div class="progress-fill" style="width:82%"></div></div><span class="progress-value">۸۲٪</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row c-2">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--magenta)"></div>نشست‌های اخیر</div></div>
+            <div class="panel-body no-pad">
+              <div class="table-wrapper">
+                <table class="table">
+                  <thead><tr><th>کاربر</th><th>Inbound</th><th>↑↓</th><th>RTT</th><th>وضعیت</th></tr></thead>
+                  <tbody>
+                    <tr><td class="text">parsa@home</td><td>vless-tcp:443</td><td>۴.۲/۱۸.۷ MB</td><td>۴۲ms</td><td><span class="pill green">live</span></td></tr>
+                    <tr><td class="text">laptop_iran</td><td>vless-tcp:443</td><td>۱.۱/۷.۲ MB</td><td>۵۶ms</td><td><span class="pill green">live</span></td></tr>
+                    <tr><td class="text">phone_4g</td><td>vless-ws:8080</td><td>۰.۴/۲.۱ MB</td><td>۸۹ms</td><td><span class="pill yellow">slow</span></td></tr>
+                    <tr><td class="text">desktop_b</td><td>vless-tcp:443</td><td>۱۲.۴/۴۴.۸ MB</td><td>۳۸ms</td><td><span class="pill green">live</span></td></tr>
+                    <tr><td class="text">family_pc</td><td>vless-tcp:443</td><td>۳.۱/۱۴.۲ MB</td><td>۴۰ms</td><td><span class="pill green">live</span></td></tr>
+                    <tr><td class="text">work_macbook</td><td>reality:8443</td><td>۸.۴/۲۲.۲ MB</td><td>۴۱ms</td><td><span class="pill green">live</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title"><div class="panel-title-dot" style="background:var(--green)"></div>لاگ زنده · تونل</div>
+              <div class="panel-actions">
+                <div class="chip-group" data-toggle-group>
+                  <div class="chip active">all</div>
+                  <div class="chip">warn</div>
+                  <div class="chip">err</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-body no-pad">
+              <div class="log-viewer" id="dash-log">
+                <div class="log-line"><span class="log-time">14:23:01</span><span class="log-level info">INFO</span><span>tunnel established · peer=185.x.x.x · rtt=38ms</span></div>
+                <div class="log-line"><span class="log-time">14:23:02</span><span class="log-level ok">OK</span><span>quic handshake · cert pinned · ChaCha20-Poly1305</span></div>
+                <div class="log-line"><span class="log-time">14:23:02</span><span class="log-level info">INFO</span><span>obfuscator · mode=standard · padding=64-1400</span></div>
+                <div class="log-line"><span class="log-time">14:23:03</span><span class="log-level info">INFO</span><span>spoof-pool loaded · 12 ipv4 sources</span></div>
+                <div class="log-line"><span class="log-time">14:23:04</span><span class="log-level ok">OK</span><span>xray-core started · pid=14782 · inbounds=7</span></div>
+                <div class="log-line"><span class="log-time">14:23:08</span><span class="log-level info">INFO</span><span>iran-agent connected · v1.4.2</span></div>
+                <div class="log-line"><span class="log-time">14:24:11</span><span class="log-level warn">WARN</span><span>jitter spike · 12ms→47ms · adapting buffer</span></div>
+                <div class="log-line"><span class="log-time">14:24:12</span><span class="log-level info">INFO</span><span>FEC recovered 3 packets · seq=44218-44220</span></div>
+                <div class="log-line"><span class="log-time">14:25:33</span><span class="log-level ok">OK</span><span>session · user=parsa@home · stream=0x4a2e</span></div>
+                <div class="log-line"><span class="log-time">14:26:01</span><span class="log-level info">INFO</span><span>config sync · iran outbounds · 7 entries</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TUNNEL ===== -->
+      <div class="page" data-page="tunnel">
+        <div class="page-header">
+          <div>
+            <div class="page-title">پیکربندی سرور تونل</div>
+            <div class="page-subtitle">$ tunnel.config --edit --validate</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn ghost btn-sm">دانلود JSON</button>
+            <button class="btn">تست اتصال</button>
+            <button class="btn primary">ذخیره و ری‌استارت</button>
+          </div>
+        </div>
+
+        <div class="tabs" data-tabs="tn-tabs">
+          <div class="tab active" data-tab="tn-net">شبکه</div>
+          <div class="tab" data-tab="tn-spoof">اسپوف</div>
+          <div class="tab" data-tab="tn-crypto">رمزنگاری</div>
+          <div class="tab" data-tab="tn-obfus">Obfuscation</div>
+          <div class="tab" data-tab="tn-quic">QUIC</div>
+          <div class="tab" data-tab="tn-perf">عملکرد</div>
+          <div class="tab" data-tab="tn-failover">Failover</div>
+        </div>
+
+        <div class="tab-panel active" data-tab="tn-net">
+          <div class="row c-2-1">
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>پارامترهای شبکه</div></div>
+              <div class="panel-body">
+                <div class="field">
+                  <label class="field-label">نوع ترنسپورت</label>
+                  <div class="chip-group" data-toggle-group>
+                    <div class="chip active">UDP</div>
+                    <div class="chip">ICMP</div>
+                    <div class="chip">RAW</div>
+                    <div class="chip">SYN+UDP</div>
+                  </div>
+                  <div class="field-help">UDP پیش‌فرض و سریع‌ترینه. ICMP برای دور زدن مسدودی UDP.</div>
+                </div>
+                <div class="field-row c-2">
+                  <div class="field"><label class="field-label">آدرس IPv4 سرور خارج</label><input class="input" value="5.75.182.40"/></div>
+                  <div class="field"><label class="field-label">پورت گوش دادن</label><input class="input" value="8443"/></div>
+                </div>
+                <div class="field-row c-2">
+                  <div class="field"><label class="field-label">آدرس IPv6 (اختیاری)</label><input class="input" placeholder="::"/></div>
+                  <div class="field"><label class="field-label">رابط شبکه</label><select class="select"><option>auto</option><option>eth0</option><option>ens3</option></select></div>
+                </div>
+                <div class="field"><label class="field-label">آدرس IP ایران (peer)</label><input class="input" value="185.0.0.0"/><div class="field-help">آدرس واقعی سرور ایران</div></div>
+                <div class="field">
+                  <label class="field-label">پروتکل ICMP (در حالت ICMP)</label>
+                  <div class="chip-group" data-toggle-group>
+                    <div class="chip active">echo (8)</div>
+                    <div class="chip">reply (0)</div>
+                  </div>
+                </div>
+                <div class="field"><label class="field-label">شماره پروتکل سفارشی (در RAW)</label><input class="input" value="253"/></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>سوئیچ‌های شبکه</div></div>
+              <div class="panel-body">
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">پشتیبانی IPv6</div><div class="toggle-label-sub">ipv6_enabled</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">پورت مبدأ تصادفی</div><div class="toggle-label-sub">randomize_src_port</div></div><div class="toggle" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">DNS از داخل تونل</div><div class="toggle-label-sub">tunneled_dns</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">ECN</div><div class="toggle-label-sub">Explicit Congestion Notification</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">TCP Fast Open</div><div class="toggle-label-sub">RFC 7413</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">SO_REUSEPORT</div><div class="toggle-label-sub">multi-threading socket</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">GSO/GRO</div><div class="toggle-label-sub">UDP segmentation offload</div></div><div class="toggle on" data-toggle></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab="tn-spoof">
+          <div class="row c-2">
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>استخر IP اسپوف خارج</div></div>
+              <div class="panel-body">
+                <div class="field"><label class="field-label">SOURCE_IP اولیه</label><input class="input" value="10.99.0.10"/></div>
+                <div class="field">
+                  <label class="field-label">استخر IPv4 (هر خط یک IP)</label>
+                  <textarea class="textarea" style="min-height:140px">10.99.0.10
+10.99.0.20
+10.99.0.30
+192.0.2.45
+198.51.100.78
+203.0.113.12</textarea>
+                  <div class="field-help">هر پکت خروجی به‌صورت تصادفی از این لیست انتخاب می‌شه.</div>
+                </div>
+                <div class="field-row c-2">
+                  <div class="field"><label class="field-label">دوره چرخش (دقیقه)</label><input class="input" value="10"/></div>
+                  <div class="field"><label class="field-label">حالت چرخش</label><select class="select"><option>تصادفی به ازای پکت</option><option>round-robin</option><option>چرخش زمانی</option><option>ثابت</option></select></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>peer (سرور ایران)</div></div>
+              <div class="panel-body">
+                <div class="field"><label class="field-label">PEER_SPOOF_IP اولیه</label><input class="input" value="10.99.0.11"/></div>
+                <div class="field">
+                  <label class="field-label">استخر peer</label>
+                  <textarea class="textarea" style="min-height:140px">10.99.0.11
+10.99.0.21
+10.99.0.31
+192.0.2.46
+198.51.100.79</textarea>
+                  <div class="field-help">باید با لیست source_ips طرف ایران یکسان باشه.</div>
+                </div>
+                <div class="field"><label class="field-label">CLIENT_REAL_IP</label><input class="input" value="185.0.0.0"/></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">چرخش خودکار IPها</div><div class="toggle-label-sub">auto_rotate_ips</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">اعتبارسنجی source در سرور</div><div class="toggle-label-sub">strict_source_validation</div></div><div class="toggle on" data-toggle></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab="tn-crypto">
+          <div class="row c-2">
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>کلیدهای X25519</div></div>
+              <div class="panel-body">
+                <div class="field">
+                  <label class="field-label">کلید خصوصی (Base64)</label>
+                  <div class="input-with-suffix"><input class="input" value="aGVsbG9wcml2YXRla2V5MzJieXRlcg==" readonly/><div class="input-suffix">کپی</div></div>
+                  <div class="field-help">۳۲ بایت تصادفی. هرگز فاش نکن.</div>
+                </div>
+                <div class="field">
+                  <label class="field-label">کلید عمومی peer</label>
+                  <div class="input-with-suffix"><input class="input" value="cGVlcnB1YmtleVRPSXJhblNlcnZlcg=="/><div class="input-suffix">پیست</div></div>
+                </div>
+                <div class="field">
+                  <label class="field-label">الگوریتم AEAD</label>
+                  <div class="chip-group" data-toggle-group>
+                    <div class="chip active">ChaCha20-Poly1305</div>
+                    <div class="chip">AES-256-GCM</div>
+                  </div>
+                  <div class="field-help">ChaCha20 برای CPU بدون AES-NI. AES-GCM روی CPU جدید بهتر.</div>
+                </div>
+                <div class="flex gap-2">
+                  <button class="btn">تولید کلید جدید</button>
+                  <button class="btn ghost">دانلود زوج کلید</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>گواهی TLS داخلی</div></div>
+              <div class="panel-body">
+                <div class="spec-grid cols-1">
+                  <div class="spec"><div class="spec-key">روش</div><div class="spec-val">deterministic از shared secret</div></div>
+                  <div class="spec"><div class="spec-key">SHA-256 محلی</div><div class="spec-val">a8:42:7c:f1:9d:2e:...:84:55</div></div>
+                  <div class="spec"><div class="spec-key">SHA-256 peer</div><div class="spec-val">b9:1d:e0:8c:7f:33:...:91:a2</div></div>
+                  <div class="spec"><div class="spec-key">CN/SAN</div><div class="spec-val">cdn.akamai.net</div></div>
+                </div>
+                <div class="toggle-row mt-3"><div class="toggle-label"><div class="toggle-label-main">TLS pinning اجباری</div><div class="toggle-label-sub">peer cert verification</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Replay protection</div><div class="toggle-label-sub">window=2048 nonces</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="field mt-3"><label class="field-label">SAN جعلی</label><input class="input" value="cdn.akamai.net"/></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab="tn-obfus">
+          <div class="row c-2">
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>حالت ضد-DPI</div></div>
+              <div class="panel-body">
+                <div class="field">
+                  <label class="field-label">حالت Obfuscation</label>
+                  <div class="chip-group" data-toggle-group>
+                    <div class="chip">none</div>
+                    <div class="chip active">standard</div>
+                    <div class="chip">paranoid</div>
+                  </div>
+                  <div class="field-help">standard: padding تصادفی + size binning. paranoid: + chaffing با نرخ ثابت.</div>
+                </div>
+                <div class="field-row c-2">
+                  <div class="field"><label class="field-label">Padding min</label><input class="input" value="64"/></div>
+                  <div class="field"><label class="field-label">Padding max</label><input class="input" value="1400"/></div>
+                </div>
+                <div class="field"><label class="field-label">سایزهای Bin</label><input class="input" value="64,128,256,512,1024,1400"/></div>
+                <div class="field">
+                  <label class="field-label">دوره Chaffing (paranoid)</label>
+                  <div class="slider-row">
+                    <input type="range" class="slider" min="10" max="500" value="50" data-slider/>
+                    <div class="slider-value" data-suffix=" ms">۵۰ ms</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--magenta)"></div>الگوهای ترافیک</div></div>
+              <div class="panel-body">
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Jitter زمان‌بندی پکت</div><div class="toggle-label-sub">±۱۵ms ضد timing analysis</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Decoy QUIC headers</div><div class="toggle-label-sub">شبیه‌سازی Initial packets</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">TLS ClientHello fingerprint</div><div class="toggle-label-sub">شبیه‌سازی Chrome/Firefox</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="field">
+                  <label class="field-label">TLS Fingerprint</label>
+                  <select class="select">
+                    <option>chrome</option>
+                    <option>firefox</option>
+                    <option>safari</option>
+                    <option>ios</option>
+                    <option>android</option>
+                    <option>random per session</option>
+                  </select>
+                </div>
+                <div class="field"><label class="field-label">SNI ظاهری</label><input class="input" value="cdn.akamai.net"/></div>
+                <div class="field"><label class="field-label">ALPN</label><input class="input" value="h3,h2"/></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab="tn-quic">
+          <div class="row c-2">
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>پارامترهای QUIC</div></div>
+              <div class="panel-body">
+                <div class="field">
+                  <label class="field-label">Pool size</label>
+                  <div class="slider-row">
+                    <input type="range" class="slider" min="1" max="32" value="8" data-slider/>
+                    <div class="slider-value">۸</div>
+                  </div>
+                  <div class="field-help">برای پایداری زیر فشار، ۸ خوبه. هر ۱۰۰ کاربر ۱ تا اضافه کن.</div>
+                </div>
+                <div class="field"><label class="field-label">Max Incoming Streams</label><input class="input" value="100000"/></div>
+                <div class="field-row c-2">
+                  <div class="field"><label class="field-label">Max Stream Window (B)</label><input class="input" value="33554432"/></div>
+                  <div class="field"><label class="field-label">Max Conn Window (B)</label><input class="input" value="134217728"/></div>
+                </div>
+                <div class="field-row c-2">
+                  <div class="field"><label class="field-label">Initial Stream Window</label><input class="input" value="2097152"/></div>
+                  <div class="field"><label class="field-label">Initial Conn Window</label><input class="input" value="4194304"/></div>
+                </div>
+                <div class="field-row c-2">
+                  <div class="field"><label class="field-label">Keep-alive (s)</label><input class="input" value="5"/></div>
+                  <div class="field"><label class="field-label">Idle Timeout (s)</label><input class="input" value="30"/></div>
+                </div>
+                <div class="field"><label class="field-label">Stream Close Timeout</label><input class="input" value="10"/></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>Congestion Control</div></div>
+              <div class="panel-body">
+                <div class="field">
+                  <label class="field-label">الگوریتم</label>
+                  <div class="chip-group" data-toggle-group>
+                    <div class="chip">CUBIC</div>
+                    <div class="chip active">BBR v1</div>
+                    <div class="chip">Reno</div>
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="field-label">آستانه packet reorder</label>
+                  <div class="slider-row">
+                    <input type="range" class="slider" min="3" max="64" value="32" data-slider/>
+                    <div class="slider-value">۳۲</div>
+                  </div>
+                  <div class="field-help">پچ این پروژه — بالاتر برای WAN با jitter</div>
+                </div>
+                <div class="field">
+                  <label class="field-label">Probe BW (BBR)</label>
+                  <select class="select"><option>auto</option><option>aggressive</option><option>conservative</option></select>
+                </div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">qlog</div><div class="toggle-label-sub">لاگ پروتکل برای دیباگ</div></div><div class="toggle" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">0-RTT</div><div class="toggle-label-sub">حذف RTT اول</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Multi-path QUIC</div><div class="toggle-label-sub">آزمایشی</div></div><div class="toggle" data-toggle></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab="tn-perf">
+          <div class="row c-2">
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>عملکرد و پایداری <span class="text-acid mono" style="font-size:10px">(کلیدی)</span></div></div>
+              <div class="panel-body">
+                <div class="field">
+                  <label class="field-label">Pacing Rate (Mbps) <span class="text-acid">★</span></label>
+                  <div class="slider-row">
+                    <input type="range" class="slider" min="0" max="1000" value="450" data-slider/>
+                    <div class="slider-value" data-suffix=" Mbps">۴۵۰ Mbps</div>
+                  </div>
+                  <div class="field-help">۱۰٪ پایین‌تر از پهنای واقعی (۵۰۰Mbps→۴۵۰).</div>
+                </div>
+                <div class="field">
+                  <label class="field-label">MTU</label>
+                  <div class="slider-row">
+                    <input type="range" class="slider" min="1200" max="1500" value="1400" data-slider/>
+                    <div class="slider-value">۱۴۰۰</div>
+                  </div>
+                </div>
+                <div class="field-row c-2">
+                  <div class="field">
+                    <label class="field-label">Read Buffer</label>
+                    <div class="slider-row">
+                      <input type="range" class="slider" min="4" max="128" value="32" data-slider/>
+                      <div class="slider-value" data-suffix=" MB">۳۲ MB</div>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label class="field-label">Write Buffer</label>
+                    <div class="slider-row">
+                      <input type="range" class="slider" min="4" max="128" value="32" data-slider/>
+                      <div class="slider-value" data-suffix=" MB">۳۲ MB</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="field-label">Jitter Buffer</label>
+                  <div class="chip-group" data-toggle-group>
+                    <div class="chip active">Auto</div>
+                    <div class="chip">Off</div>
+                    <div class="chip">5ms</div>
+                    <div class="chip">20ms</div>
+                    <div class="chip">50ms</div>
+                  </div>
+                </div>
+                <div class="field-row c-2">
+                  <div class="field"><label class="field-label">Worker threads</label><input class="input" value="auto"/></div>
+                  <div class="field"><label class="field-label">CPU affinity</label><input class="input" value="0,1,2,3"/></div>
+                </div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">SO_BUSY_POLL</div><div class="toggle-label-sub">CPU بیشتر، latency کمتر</div></div><div class="toggle" data-toggle></div></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--orange)"></div>System tuning (sysctl)</div></div>
+              <div class="panel-body">
+                <div class="field-help mb-3">روی <span class="mono">/etc/sysctl.d/99-quiccochet.conf</span> اعمال می‌شه.</div>
+                <div class="spec-grid cols-1">
+                  <div class="spec"><div class="spec-key">net.core.rmem_max</div><div class="spec-val text-acid">134217728</div></div>
+                  <div class="spec"><div class="spec-key">net.core.wmem_max</div><div class="spec-val text-acid">134217728</div></div>
+                  <div class="spec"><div class="spec-key">net.core.netdev_max_backlog</div><div class="spec-val text-acid">30000</div></div>
+                  <div class="spec"><div class="spec-key">net.core.default_qdisc</div><div class="spec-val text-acid">fq</div></div>
+                  <div class="spec"><div class="spec-key">net.ipv4.tcp_congestion_control</div><div class="spec-val text-acid">bbr</div></div>
+                  <div class="spec"><div class="spec-key">net.ipv4.udp_mem</div><div class="spec-val text-acid">102400 873800 134217728</div></div>
+                </div>
+                <div class="flex gap-2 mt-3">
+                  <button class="btn primary btn-sm">apply</button>
+                  <button class="btn ghost btn-sm">ویرایش</button>
+                  <button class="btn ghost btn-sm">restore</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab="tn-failover">
+          <div class="row c-2-1">
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>سیاست Failover</div></div>
+              <div class="panel-body">
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Failover ترنسپورت خودکار</div><div class="toggle-label-sub">UDP→ICMP در صورت شکست</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="field"><label class="field-label">ترتیب Failover</label><input class="input" value="udp → syn_udp → icmp → raw"/></div>
+                <div class="field-row c-2">
+                  <div class="field"><label class="field-label">آستانه (loss%)</label><input class="input" value="5"/></div>
+                  <div class="field"><label class="field-label">Hold-down (s)</label><input class="input" value="60"/></div>
+                </div>
+                <div class="field">
+                  <label class="field-label">Health-check interval</label>
+                  <div class="slider-row">
+                    <input type="range" class="slider" min="1" max="60" value="5" data-slider/>
+                    <div class="slider-value" data-suffix=" s">۵ s</div>
+                  </div>
+                </div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Reconnect خودکار</div><div class="toggle-label-sub">با backoff تلاش</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="field-row c-2">
+                  <div class="field"><label class="field-label">Backoff اولیه (ms)</label><input class="input" value="500"/></div>
+                  <div class="field"><label class="field-label">Backoff حداکثر (ms)</label><input class="input" value="30000"/></div>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--green)"></div>وضعیت اخیر</div></div>
+              <div class="panel-body">
+                <div class="spec-grid cols-1">
+                  <div class="spec"><div class="spec-key">ترنسپورت فعلی</div><div class="spec-val text-acid">UDP</div></div>
+                  <div class="spec"><div class="spec-key">آخرین failover</div><div class="spec-val">۲ روز قبل</div></div>
+                  <div class="spec"><div class="spec-key">تعداد failover (۳۰d)</div><div class="spec-val">۳</div></div>
+                  <div class="spec"><div class="spec-key">میانگین زمان بازگشت</div><div class="spec-val">۱۸ ثانیه</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel mt-4">
+          <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--orange)"></div>پیش‌نمایش JSON</div></div>
+          <div class="panel-body no-pad">
+<pre class="code"><span class="b">{</span>
+  <span class="k">"mode"</span>: <span class="s">"server"</span>,
+  <span class="k">"transport"</span>: <span class="b">{</span> <span class="k">"type"</span>: <span class="s">"udp"</span> <span class="b">}</span>,
+  <span class="k">"listen_port"</span>: <span class="n">8443</span>,
+  <span class="k">"spoof"</span>: <span class="b">{</span>
+    <span class="k">"source_ips"</span>: <span class="b">[</span><span class="s">"10.99.0.10"</span>, <span class="s">"10.99.0.20"</span><span class="b">]</span>,
+    <span class="k">"peer_spoof_ips"</span>: <span class="b">[</span><span class="s">"10.99.0.11"</span>, <span class="s">"10.99.0.21"</span><span class="b">]</span>,
+    <span class="k">"client_real_ip"</span>: <span class="s">"185.0.0.0"</span>
+  <span class="b">}</span>,
+  <span class="k">"performance"</span>: <span class="b">{</span> <span class="k">"pacing_rate_mbps"</span>: <span class="n">450</span>, <span class="k">"mtu"</span>: <span class="n">1400</span> <span class="b">}</span>,
+  <span class="k">"quic"</span>: <span class="b">{</span> <span class="k">"pool_size"</span>: <span class="n">8</span>, <span class="k">"congestion_control"</span>: <span class="s">"bbr"</span> <span class="b">}</span>,
+  <span class="k">"obfuscation"</span>: <span class="b">{</span> <span class="k">"enabled"</span>: <span class="n">true</span>, <span class="k">"mode"</span>: <span class="s">"standard"</span> <span class="b">}</span>
+<span class="b">}</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== IRAN SERVER ===== -->
+      <div class="page" data-page="iran">
+        <div class="page-header">
+          <div>
+            <div class="page-title">سرور ایران (نمای فقط‌خواندنی)</div>
+            <div class="page-subtitle">$ iran-link --readonly · پیکربندی از پنل ایران انجام بشه</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn ghost btn-sm">باز کردن پنل ایران</button>
+            <button class="btn">پینگ تست</button>
+            <button class="btn primary">Push کلیدها</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card green"><div class="stat-label">وضعیت Agent</div><div class="stat-value" style="color:var(--green);font-size:18px">CONNECTED</div><div class="stat-trend">v1.4.2 · ping=۴۲ms</div></div>
+          <div class="stat-card cyan"><div class="stat-label">CPU ایران</div><div class="stat-value">۲۸<span class="stat-value-unit">%</span></div></div>
+          <div class="stat-card magenta"><div class="stat-label">RAM ایران</div><div class="stat-value">۲.۱<span class="stat-value-unit">/8 GB</span></div></div>
+          <div class="stat-card orange"><div class="stat-label">Port Forward فعال</div><div class="stat-value">۷</div></div>
+        </div>
+
+        <div class="panel mb-3">
+          <div class="panel-header">
+            <div class="panel-title"><div class="panel-title-dot"></div>قوانین Port Forward (همگام)</div>
+            <div class="panel-actions">
+              <button class="btn ghost btn-sm">رفرش</button>
+              <button class="btn primary btn-sm">Sync همه</button>
+            </div>
+          </div>
+          <div class="panel-body no-pad">
+            <div class="table-wrapper">
+              <table class="table">
+                <thead><tr><th>پورت ایران</th><th>پروتکل</th><th>هدف خارج</th><th>ترافیک امروز</th><th>وضعیت</th></tr></thead>
+                <tbody>
+                  <tr><td>185.x.x.x:443</td><td>TCP</td><td>vless-tcp:127.0.0.1:8001</td><td>۱۸۴.۷ GB</td><td><span class="pill green">synced</span></td></tr>
+                  <tr><td>185.x.x.x:8443</td><td>TCP</td><td>reality:127.0.0.1:8002</td><td>۴.۱ GB</td><td><span class="pill green">synced</span></td></tr>
+                  <tr><td>185.x.x.x:8080</td><td>TCP</td><td>vless-ws:127.0.0.1:8003</td><td>۲۲.۴ GB</td><td><span class="pill green">synced</span></td></tr>
+                  <tr><td>185.x.x.x:2053</td><td>TCP</td><td>vless-grpc:127.0.0.1:8004</td><td>۱.۸ GB</td><td><span class="pill green">synced</span></td></tr>
+                  <tr><td>185.x.x.x:8444</td><td>TCP</td><td>trojan:127.0.0.1:8005</td><td>۰ B</td><td><span class="pill yellow">idle</span></td></tr>
+                  <tr><td>185.x.x.x:51820</td><td>UDP</td><td>wireguard:127.0.0.1:8006</td><td>۱۲.۴ GB</td><td><span class="pill green">synced</span></td></tr>
+                  <tr><td>185.x.x.x:8388</td><td>TCP</td><td>shadowsocks:127.0.0.1:8007</td><td>۲.۲ GB</td><td><span class="pill green">synced</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="row c-2">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>منابع سرور ایران</div></div>
+            <div class="panel-body">
+              <div class="progress"><span class="progress-label">CPU</span><div class="progress-bar"><div class="progress-fill" style="width:28%"></div></div><span class="progress-value">۲۸٪</span></div>
+              <div class="progress"><span class="progress-label">RAM</span><div class="progress-bar"><div class="progress-fill cyan" style="width:26%"></div></div><span class="progress-value cyan">۲.۱G</span></div>
+              <div class="progress"><span class="progress-label">DISK</span><div class="progress-bar"><div class="progress-fill orange" style="width:38%"></div></div><span class="progress-value" style="color:var(--orange)">۳۸٪</span></div>
+              <div class="progress"><span class="progress-label">NET</span><div class="progress-bar"><div class="progress-fill" style="width:82%"></div></div><span class="progress-value">۸۲٪</span></div>
+              <div class="divider"></div>
+              <div class="spec-grid">
+                <div class="spec"><div class="spec-key">Agent</div><div class="spec-val text-acid">v1.4.2</div></div>
+                <div class="spec"><div class="spec-key">Kernel</div><div class="spec-val">6.1.0</div></div>
+                <div class="spec"><div class="spec-key">Uptime</div><div class="spec-val">۱۸d</div></div>
+                <div class="spec"><div class="spec-key">Last sync</div><div class="spec-val">۲۲s قبل</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--magenta)"></div>عملیات سریع</div></div>
+            <div class="panel-body">
+              <div class="row c-2" style="margin-bottom:0">
+                <button class="btn">ری‌استارت Agent</button>
+                <button class="btn">پاک‌کردن لاگ</button>
+                <button class="btn">Sync کلیدها</button>
+                <button class="btn">آپدیت Agent</button>
+                <button class="btn">Sysctl Tune</button>
+                <button class="btn">UFW Status</button>
+                <button class="btn">پشتیبان‌گیری</button>
+                <button class="btn danger">قطع تونل</button>
+              </div>
+              <div class="divider"></div>
+              <div class="text-faint mono" style="font-size:10px;text-transform:uppercase">پنل ایران</div>
+              <div class="mt-2 mono" style="font-size:11px;color:var(--text-1)">
+                http://185.x.x.x:9998<br/>
+                <span class="text-faint">برای پورت‌فوروارد و کنترل سرور ایران مستقل</span>
+              </div>
+              <button class="btn cyan mt-3" style="width:100%;justify-content:center">باز کردن پنل ایران</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== INBOUNDS ===== -->
+      <div class="page" data-page="inbounds">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Inbound های Xray Core</div>
+            <div class="page-subtitle">$ xray.inbound --list · هسته داخلی روی سرور خارج</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn ghost btn-sm">config.json</button>
+            <button class="btn btn-sm">ری‌استارت Xray</button>
+            <button class="btn primary" id="btn-add-inbound">+ Inbound جدید</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Inbound فعال</div><div class="stat-value">۷</div></div>
+          <div class="stat-card cyan"><div class="stat-label">پروتکل غالب</div><div class="stat-value" style="font-size:16px">VLESS-TCP</div></div>
+          <div class="stat-card magenta"><div class="stat-label">Xray PID</div><div class="stat-value mono" style="font-size:18px">14782</div></div>
+          <div class="stat-card orange"><div class="stat-label">آپتایم Xray</div><div class="stat-value">۹d</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><div class="panel-title-dot"></div>لیست Inbound ها</div>
+            <input class="input" placeholder="جستجو..." style="width:200px;font-size:11px"/>
+          </div>
+          <div class="panel-body no-pad">
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr><th><input type="checkbox" class="checkbox"/></th><th>TAG</th><th>پروتکل</th><th>پورت داخلی</th><th>پورت ایران</th><th>کاربر</th><th>ترافیک امروز</th><th>TLS</th><th>وضعیت</th><th></th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td>main-tcp</td><td><span class="pill cyan">VLESS-TCP</span></td><td>8001</td><td>443</td><td>۳۲</td><td>۱۸۴.۷ GB</td><td><span class="pill purple">REALITY</span></td><td><span class="pill green">running</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td>fallback-ws</td><td><span class="pill cyan">VLESS-WS</span></td><td>8003</td><td>8080</td><td>۸</td><td>۲۲.۴ GB</td><td><span class="pill green">TLS</span></td><td><span class="pill green">running</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td>reality-pri</td><td><span class="pill purple">VLESS-Reality</span></td><td>8002</td><td>8443</td><td>۲</td><td>۴.۱ GB</td><td><span class="pill purple">REALITY</span></td><td><span class="pill green">running</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td>grpc-svc</td><td><span class="pill cyan">VLESS-gRPC</span></td><td>8004</td><td>2053</td><td>۱</td><td>۱.۸ GB</td><td><span class="pill green">TLS</span></td><td><span class="pill green">running</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td>trojan-bk</td><td><span class="pill cyan">TROJAN</span></td><td>8005</td><td>8444</td><td>۰</td><td>۰ B</td><td><span class="pill green">TLS</span></td><td><span class="pill yellow">idle</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td>ss-2022</td><td><span class="pill cyan">SS-2022</span></td><td>8007</td><td>8388</td><td>۱</td><td>۲.۲ GB</td><td><span class="pill gray">none</span></td><td><span class="pill green">running</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td>vmess-fb</td><td><span class="pill cyan">VMESS</span></td><td>8008</td><td>2096</td><td>۰</td><td>۰ B</td><td><span class="pill green">TLS</span></td><td><span class="pill yellow">idle</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a><a class="table-action danger">×</a></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel mt-3">
+          <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>یادآوری معماری</div></div>
+          <div class="panel-body">
+            <div style="font-size:13px;line-height:1.8">
+              هر Inbound روی <span class="mono text-acid">127.0.0.1:8001-8099</span> در سرور خارج گوش می‌ده. سرور ایران از طریق تونل ترافیک رو روی این پورت‌ها فوروارد می‌کنه. <b class="text-cyan">پورت ایران</b> همون پورتیه که کاربر بهش وصل می‌شه (مثلاً ۴۴۳)، و در سمت ایران به Inbound متناظر در خارج map می‌شه.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== USERS ===== -->
+      <div class="page" data-page="users">
+        <div class="page-header">
+          <div>
+            <div class="page-title">مدیریت کاربران</div>
+            <div class="page-subtitle">$ user.list · ۴۲ کاربر</div>
+          </div>
+          <div class="page-actions">
+            <input class="input" placeholder="جستجو..." style="width:200px;font-size:12px"/>
+            <button class="btn ghost btn-sm">CSV</button>
+            <button class="btn ghost btn-sm">Bulk add</button>
+            <button class="btn primary" id="btn-add-user">+ کاربر جدید</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card green"><div class="stat-label">آنلاین</div><div class="stat-value">۱۴<span class="stat-value-unit">/۴۲</span></div></div>
+          <div class="stat-card cyan"><div class="stat-label">فعال</div><div class="stat-value">۳۸</div></div>
+          <div class="stat-card orange"><div class="stat-label">نزدیک سهمیه</div><div class="stat-value">۴</div></div>
+          <div class="stat-card magenta"><div class="stat-label">منقضی</div><div class="stat-value">۰</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-body no-pad">
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr><th><input type="checkbox" class="checkbox"/></th><th>NAME</th><th>UUID</th><th>Inbound</th><th>استفاده</th><th>سهمیه</th><th>انقضا</th><th>گروه</th><th>وضعیت</th><th></th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td class="text">parsa@home</td><td>b85ee23a...8c8a</td><td>main-tcp</td><td>۱۸۴.۷ GB</td><td>۵۰۰ GB</td><td>۱۴۰۴/۰۴/۱۵</td><td><span class="pill purple">premium</span></td><td><span class="pill green">active</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a></td></tr>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td class="text">laptop_iran</td><td>3a91fe07...d4e1</td><td>main-tcp</td><td>۲۲.۴ GB</td><td>۲۰۰ GB</td><td>۱۴۰۴/۰۳/۲۲</td><td><span class="pill cyan">basic</span></td><td><span class="pill green">active</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a></td></tr>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td class="text">phone_4g</td><td>8d2e44b1...0fa3</td><td>fallback-ws</td><td>۴۲.۲ GB</td><td>۵۰ GB</td><td>۱۴۰۴/۰۲/۱۸</td><td><span class="pill cyan">basic</span></td><td><span class="pill yellow">low</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a></td></tr>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td class="text">desktop_b</td><td>1f8a23c0...9bb2</td><td>main-tcp</td><td>۴۲۲.۸ GB</td><td>۵۰۰ GB</td><td>۱۴۰۴/۰۵/۰۱</td><td><span class="pill purple">premium</span></td><td><span class="pill yellow">low</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a></td></tr>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td class="text">guest_x7</td><td>9c44e811...a34f</td><td>trojan-bk</td><td>۰.۱ GB</td><td>۱۰ GB</td><td>منقضی</td><td><span class="pill gray">guest</span></td><td><span class="pill red">expired</span></td><td><a class="table-action">renew</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td class="text">family_pc</td><td>72b1ee45...8c1d</td><td>main-tcp</td><td>۶۷.۳ GB</td><td>∞</td><td>∞</td><td><span class="pill acid">vip</span></td><td><span class="pill green">unlimited</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a></td></tr>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td class="text">student_a</td><td>4c8f1e22...5bc8</td><td>fallback-ws</td><td>۸.۲ GB</td><td>۲۰ GB</td><td>۱۴۰۴/۰۲/۰۱</td><td><span class="pill cyan">basic</span></td><td><span class="pill green">active</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a></td></tr>
+                  <tr><td><input type="checkbox" class="checkbox"/></td><td class="text">work_macbook</td><td>9a4427bb...3e91</td><td>reality-pri</td><td>۱۲۲.۴ GB</td><td>۳۰۰ GB</td><td>۱۴۰۴/۰۴/۲۲</td><td><span class="pill purple">premium</span></td><td><span class="pill green">active</span></td><td><a class="table-action">edit</a><a class="table-action">qr</a></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SUBSCRIPTION ===== -->
+      <div class="page" data-page="subscription">
+        <div class="page-header">
+          <div>
+            <div class="page-title">اشتراک‌ها و QR</div>
+            <div class="page-subtitle">$ sub.generate --user --link</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn ghost btn-sm">Sub generator</button>
+            <button class="btn primary">دامنه اختصاصی</button>
+          </div>
+        </div>
+
+        <div class="row c-2">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>کاربر · parsa@home</div></div>
+            <div class="panel-body">
+              <div style="text-align:center">
+                <div style="display:inline-block;padding:14px;background:#fff;border-radius:6px">
+                  <svg width="180" height="180" viewBox="0 0 25 25" style="display:block">
+                    <rect width="25" height="25" fill="white"/>
+                    <g fill="black">
+                      <rect x="0" y="0" width="7" height="7"/><rect x="1" y="1" width="5" height="5" fill="white"/><rect x="2" y="2" width="3" height="3"/>
+                      <rect x="18" y="0" width="7" height="7"/><rect x="19" y="1" width="5" height="5" fill="white"/><rect x="20" y="2" width="3" height="3"/>
+                      <rect x="0" y="18" width="7" height="7"/><rect x="1" y="19" width="5" height="5" fill="white"/><rect x="2" y="20" width="3" height="3"/>
+                      <rect x="8" y="0" width="1" height="1"/><rect x="10" y="0" width="2" height="1"/><rect x="14" y="0" width="1" height="2"/>
+                      <rect x="8" y="3" width="2" height="2"/><rect x="11" y="4" width="3" height="1"/><rect x="16" y="4" width="1" height="2"/>
+                      <rect x="9" y="6" width="2" height="1"/><rect x="13" y="6" width="2" height="1"/><rect x="0" y="8" width="2" height="1"/><rect x="3" y="8" width="2" height="2"/>
+                      <rect x="6" y="8" width="3" height="1"/><rect x="11" y="8" width="2" height="1"/><rect x="14" y="8" width="1" height="3"/><rect x="17" y="8" width="2" height="1"/>
+                      <rect x="20" y="8" width="3" height="2"/><rect x="2" y="10" width="3" height="1"/><rect x="7" y="10" width="2" height="2"/><rect x="11" y="10" width="2" height="1"/>
+                      <rect x="16" y="10" width="2" height="3"/><rect x="20" y="11" width="2" height="2"/><rect x="0" y="12" width="3" height="1"/><rect x="5" y="12" width="2" height="2"/>
+                      <rect x="9" y="12" width="3" height="2"/><rect x="13" y="13" width="2" height="1"/><rect x="18" y="13" width="3" height="2"/>
+                      <rect x="0" y="15" width="2" height="2"/><rect x="3" y="15" width="3" height="1"/><rect x="8" y="15" width="2" height="2"/><rect x="11" y="15" width="3" height="2"/>
+                      <rect x="15" y="15" width="2" height="3"/><rect x="19" y="15" width="2" height="1"/><rect x="22" y="15" width="3" height="2"/>
+                      <rect x="8" y="18" width="3" height="1"/><rect x="13" y="18" width="2" height="2"/><rect x="18" y="18" width="2" height="2"/><rect x="22" y="18" width="2" height="3"/>
+                      <rect x="9" y="20" width="2" height="3"/><rect x="13" y="20" width="3" height="1"/><rect x="17" y="20" width="2" height="3"/><rect x="20" y="20" width="2" height="2"/>
+                      <rect x="11" y="22" width="2" height="2"/><rect x="14" y="22" width="3" height="2"/>
+                    </g>
+                  </svg>
+                </div>
+              </div>
+              <div class="field mt-3">
+                <label class="field-label">VLESS URI</label>
+                <textarea class="textarea" style="min-height:60px;font-size:10px" readonly>vless://b85ee23a-4f12-4d22-9100-7e4e2c0d8c8a@185.x.x.x:443?security=reality&sni=cdn.akamai.net&fp=chrome&pbk=PUB&sid=01ab&type=tcp&flow=xtls-rprx-vision#parsa-home</textarea>
+              </div>
+              <div class="field"><label class="field-label">Subscription URL</label><input class="input" readonly value="https://panel.your.tld/sub/parsa-home-x9k3"/></div>
+              <div class="flex gap-2">
+                <button class="btn ghost btn-sm">کپی URI</button>
+                <button class="btn ghost btn-sm">دانلود PNG</button>
+                <button class="btn ghost btn-sm">رفرش UUID</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>تنظیمات اشتراک</div></div>
+            <div class="panel-body">
+              <div class="field"><label class="field-label">دامنه اشتراک</label><input class="input" value="panel.your.tld"/></div>
+              <div class="field"><label class="field-label">پورت پنل اشتراک</label><input class="input" value="443"/></div>
+              <div class="field"><label class="field-label">قالب نام کانفیگ</label><input class="input" value="{user}@{server} · {protocol}"/></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">شامل همه Inboundها</div><div class="toggle-label-sub">subscription فهرست همه پروتکل‌ها</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">عنوان اطلاعات حجم</div><div class="toggle-label-sub">remained traffic در هدر</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Multi-port rotation</div><div class="toggle-label-sub">پورت متفاوت برای هر کاربر</div></div><div class="toggle" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">QR base64 embed</div><div class="toggle-label-sub">برای کلاینت‌های قدیمی</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="field mt-3"><label class="field-label">نمونه</label>
+<pre class="code" style="font-size:10px">vless://...#parsa-home@FRA · TCP
+vless://...#parsa-home@FRA · WS
+vless://...#parsa-home@FRA · REALITY
+trojan://...#parsa-home@FRA · TJ</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ROUTING ===== -->
+      <div class="page" data-page="routing">
+        <div class="page-header">
+          <div>
+            <div class="page-title">قوانین روتینگ</div>
+            <div class="page-subtitle">$ routing.rules · domain · IP · geo</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn ghost btn-sm">import GeoIP</button>
+            <button class="btn primary">+ قانون جدید</button>
+          </div>
+        </div>
+
+        <div class="tabs" data-tabs="rt-tabs">
+          <div class="tab active" data-tab="rt-rules">قوانین</div>
+          <div class="tab" data-tab="rt-direct">Direct</div>
+          <div class="tab" data-tab="rt-block">Block</div>
+          <div class="tab" data-tab="rt-geo">GeoIP</div>
+          <div class="tab" data-tab="rt-out">Outbounds</div>
+        </div>
+
+        <div class="tab-panel active" data-tab="rt-rules">
+          <div class="panel">
+            <div class="panel-body no-pad">
+              <table class="table">
+                <thead><tr><th>#</th><th>نوع</th><th>الگو</th><th>هدف</th><th>اولویت</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td>۱</td><td><span class="pill purple">domain</span></td><td>geosite:category-ads-all</td><td><span class="pill red">block</span></td><td>۱۰۰۰</td><td><a class="table-action">edit</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td>۲</td><td><span class="pill cyan">ip</span></td><td>geoip:private</td><td><span class="pill yellow">direct</span></td><td>۹۰۰</td><td><a class="table-action">edit</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td>۳</td><td><span class="pill purple">domain</span></td><td>geosite:cn</td><td><span class="pill yellow">direct</span></td><td>۸۰۰</td><td><a class="table-action">edit</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td>۴</td><td><span class="pill cyan">ip</span></td><td>geoip:ir</td><td><span class="pill yellow">direct</span></td><td>۷۰۰</td><td><a class="table-action">edit</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td>۵</td><td><span class="pill purple">domain</span></td><td>regexp:.*\.gov\.ir$</td><td><span class="pill yellow">direct</span></td><td>۶۰۰</td><td><a class="table-action">edit</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td>۶</td><td><span class="pill orange">protocol</span></td><td>bittorrent</td><td><span class="pill red">block</span></td><td>۵۰۰</td><td><a class="table-action">edit</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td>۷</td><td><span class="pill cyan">port</span></td><td>53</td><td>tag:dns-out</td><td>۴۰۰</td><td><a class="table-action">edit</a><a class="table-action danger">×</a></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab="rt-direct">
+          <div class="panel"><div class="panel-body">
+            <div class="field"><label class="field-label">دامنه‌های direct</label>
+              <textarea class="textarea" style="min-height:200px">geosite:cn
+geosite:category-ir
+domain:gov.ir
+domain:digikala.com
+domain:divar.ir
+domain:snapp.ir</textarea>
+            </div>
+          </div></div>
+        </div>
+
+        <div class="tab-panel" data-tab="rt-block">
+          <div class="panel"><div class="panel-body">
+            <div class="field"><label class="field-label">قوانین block</label>
+              <textarea class="textarea" style="min-height:200px">geosite:category-ads-all
+domain:doubleclick.net
+protocol:bittorrent
+ip:0.0.0.0/8
+ip:127.0.0.0/8</textarea>
+            </div>
+          </div></div>
+        </div>
+
+        <div class="tab-panel" data-tab="rt-geo">
+          <div class="panel"><div class="panel-body">
+            <div class="row c-2">
+              <div class="spec"><div class="spec-key">GeoIP version</div><div class="spec-val text-acid">v202604.04</div></div>
+              <div class="spec"><div class="spec-key">آخرین بروزرسانی</div><div class="spec-val">۲ روز پیش</div></div>
+              <div class="spec"><div class="spec-key">GeoSite version</div><div class="spec-val text-acid">v202604.04</div></div>
+              <div class="spec"><div class="spec-key">حجم</div><div class="spec-val">۸.۲ MB</div></div>
+            </div>
+            <div class="flex gap-2 mt-3">
+              <button class="btn primary btn-sm">بروزرسانی الان</button>
+              <button class="btn ghost btn-sm">آپلود فایل سفارشی</button>
+            </div>
+          </div></div>
+        </div>
+
+        <div class="tab-panel" data-tab="rt-out">
+          <div class="panel"><div class="panel-body no-pad">
+            <table class="table">
+              <thead><tr><th>TAG</th><th>پروتکل</th><th>هدف</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>direct</td><td><span class="pill yellow">freedom</span></td><td>--</td><td><a class="table-action">edit</a></td></tr>
+                <tr><td>block</td><td><span class="pill red">blackhole</span></td><td>--</td><td><a class="table-action">edit</a></td></tr>
+                <tr><td>dns-out</td><td><span class="pill cyan">dns</span></td><td>1.1.1.1, 8.8.8.8</td><td><a class="table-action">edit</a></td></tr>
+                <tr><td>warp</td><td><span class="pill purple">wireguard</span></td><td>cf-warp endpoint</td><td><a class="table-action">edit</a></td></tr>
+              </tbody>
+            </table>
+          </div></div>
+        </div>
+      </div>
+
+      <!-- ===== LOGS ===== -->
+      <div class="page" data-page="logs">
+        <div class="page-header">
+          <div>
+            <div class="page-title">لاگ‌های کامل</div>
+            <div class="page-subtitle">$ tail -f /var/log/quiccochet/*.log</div>
+          </div>
+          <div class="page-actions">
+            <input class="input" placeholder="جستجو..." style="width:200px;font-size:11px"/>
+            <div class="chip-group" data-toggle-group>
+              <div class="chip active">all</div>
+              <div class="chip">tunnel</div>
+              <div class="chip">xray</div>
+              <div class="chip">agent</div>
+            </div>
+            <button class="btn ghost btn-sm">دانلود</button>
+          </div>
+        </div>
+
+        <div class="row c-3-1">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title"><div class="panel-title-dot"></div>stream</div>
+              <div class="panel-actions">
+                <div class="chip-group" data-toggle-group>
+                  <div class="chip active">all</div>
+                  <div class="chip">info</div>
+                  <div class="chip">warn</div>
+                  <div class="chip">err</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-body no-pad">
+              <div class="log-viewer tall">
+                <div class="log-line"><span class="log-time">14:23:01</span><span class="log-level info">INFO</span><span>tunnel established · peer=185.x.x.x · rtt=38ms</span></div>
+                <div class="log-line"><span class="log-time">14:23:02</span><span class="log-level ok">OK</span><span>quic handshake · cert pinned</span></div>
+                <div class="log-line"><span class="log-time">14:23:02</span><span class="log-level info">INFO</span><span>obfuscator · mode=standard · padding=64-1400</span></div>
+                <div class="log-line"><span class="log-time">14:23:03</span><span class="log-level info">INFO</span><span>spoof-pool loaded · 12 ipv4 sources</span></div>
+                <div class="log-line"><span class="log-time">14:23:04</span><span class="log-level ok">OK</span><span>xray-core started · pid=14782 · inbounds=7</span></div>
+                <div class="log-line"><span class="log-time">14:23:08</span><span class="log-level info">INFO</span><span>iran-agent connected · v1.4.2</span></div>
+                <div class="log-line"><span class="log-time">14:24:11</span><span class="log-level warn">WARN</span><span>jitter spike · 12ms→47ms · adapting buffer</span></div>
+                <div class="log-line"><span class="log-time">14:24:12</span><span class="log-level info">INFO</span><span>FEC recovered 3 packets · seq=44218-44220</span></div>
+                <div class="log-line"><span class="log-time">14:25:33</span><span class="log-level ok">OK</span><span>session established · user=parsa@home</span></div>
+                <div class="log-line"><span class="log-time">14:26:01</span><span class="log-level info">INFO</span><span>config sync · iran outbounds · 7 entries</span></div>
+                <div class="log-line"><span class="log-time">14:27:14</span><span class="log-level info">INFO</span><span>spoof-pool rotated · batch-7</span></div>
+                <div class="log-line"><span class="log-time">14:28:42</span><span class="log-level warn">WARN</span><span>high_rtt sample · 234ms · path congested</span></div>
+                <div class="log-line"><span class="log-time">14:28:44</span><span class="log-level info">INFO</span><span>cwnd backoff · BBR · pacing=412Mbps</span></div>
+                <div class="log-line"><span class="log-time">14:29:03</span><span class="log-level ok">OK</span><span>cwnd recovered · pacing=445Mbps</span></div>
+                <div class="log-line"><span class="log-time">14:30:11</span><span class="log-level info">INFO</span><span>periodic stats · sent=14.2GB · recv=42.7GB</span></div>
+                <div class="log-line"><span class="log-time">14:31:22</span><span class="log-level debug">DEBUG</span><span>quic ack · pn=0x4f2a3b · ack_delay=3ms</span></div>
+                <div class="log-line"><span class="log-time">14:32:02</span><span class="log-level info">INFO</span><span>new client · user=desktop_b</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--orange)"></div>آمار</div></div>
+            <div class="panel-body">
+              <div class="spec-grid cols-1">
+                <div class="spec"><div class="spec-key">سطح لاگ</div><div class="spec-val text-acid">info</div></div>
+                <div class="spec"><div class="spec-key">حجم امروز</div><div class="spec-val">۲۲ MB</div></div>
+                <div class="spec"><div class="spec-key">ERROR</div><div class="spec-val text-red">۲</div></div>
+                <div class="spec"><div class="spec-key">WARN</div><div class="spec-val text-yellow">۴۸</div></div>
+                <div class="spec"><div class="spec-key">retention</div><div class="spec-val">۳۰ روز</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== METRICS ===== -->
+      <div class="page" data-page="metrics">
+        <div class="page-header">
+          <div>
+            <div class="page-title">متریک‌های پیشرفته</div>
+            <div class="page-subtitle">$ metrics --prometheus --since 6h</div>
+          </div>
+          <div class="page-actions">
+            <div class="chip-group" data-toggle-group>
+              <div class="chip">۱h</div>
+              <div class="chip active">۶h</div>
+              <div class="chip">۲۴h</div>
+              <div class="chip">۷d</div>
+            </div>
+            <button class="btn ghost btn-sm">Grafana</button>
+            <button class="btn ghost btn-sm">Export Prom</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">total bytes</div><div class="stat-value">۱.۸<span class="stat-value-unit">TB</span></div></div>
+          <div class="stat-card cyan"><div class="stat-label">total packets</div><div class="stat-value">۱.۲<span class="stat-value-unit">B</span></div></div>
+          <div class="stat-card magenta"><div class="stat-label">peak Mbps</div><div class="stat-value">۴۸۷</div></div>
+          <div class="stat-card orange"><div class="stat-label">RTT p99</div><div class="stat-value">۱۸۰<span class="stat-value-unit">ms</span></div></div>
+        </div>
+
+        <div class="row c-2">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>Throughput · ۶h</div></div>
+            <div class="panel-body no-pad">
+              <div class="chart-wrapper">
+                <svg class="chart-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
+                  <g stroke="#1f2937" stroke-width="0.5"><line x1="0" y1="40" x2="600" y2="40"/><line x1="0" y1="80" x2="600" y2="80"/><line x1="0" y1="120" x2="600" y2="120"/><line x1="0" y1="160" x2="600" y2="160"/></g>
+                  <path d="M0,80 Q60,90 100,70 T200,60 T300,90 T400,40 T500,55 T600,30 L600,200 L0,200 Z" fill="rgba(196,245,66,0.2)" stroke="#c4f542" stroke-width="1.5"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>RTT · ۶h</div></div>
+            <div class="panel-body no-pad">
+              <div class="chart-wrapper">
+                <svg class="chart-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
+                  <g stroke="#1f2937" stroke-width="0.5"><line x1="0" y1="40" x2="600" y2="40"/><line x1="0" y1="80" x2="600" y2="80"/><line x1="0" y1="120" x2="600" y2="120"/><line x1="0" y1="160" x2="600" y2="160"/></g>
+                  <path d="M0,140 Q40,142 80,138 T160,141 T240,135 T320,160 T400,138 T480,140 T600,135" fill="none" stroke="#4dd4ff" stroke-width="1.5"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--orange)"></div>Packet Loss %</div></div>
+            <div class="panel-body no-pad">
+              <div class="chart-wrapper">
+                <svg class="chart-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
+                  <g stroke="#1f2937" stroke-width="0.5"><line x1="0" y1="40" x2="600" y2="40"/><line x1="0" y1="80" x2="600" y2="80"/><line x1="0" y1="120" x2="600" y2="120"/><line x1="0" y1="160" x2="600" y2="160"/></g>
+                  <path d="M0,180 L60,178 L120,182 L180,170 L240,180 L300,160 L360,178 L420,182 L480,179 L540,180 L600,178" fill="none" stroke="#ff9b3d" stroke-width="1.5"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--magenta)"></div>Sessions</div></div>
+            <div class="panel-body no-pad">
+              <div class="chart-wrapper">
+                <svg class="chart-svg" viewBox="0 0 600 200" preserveAspectRatio="none">
+                  <g stroke="#1f2937" stroke-width="0.5"><line x1="0" y1="40" x2="600" y2="40"/><line x1="0" y1="80" x2="600" y2="80"/><line x1="0" y1="120" x2="600" y2="120"/><line x1="0" y1="160" x2="600" y2="160"/></g>
+                  <path d="M0,160 L60,140 L120,150 L180,120 L240,90 L300,80 L360,100 L420,80 L480,60 L540,70 L600,50 L600,200 L0,200 Z" fill="rgba(255,61,142,0.2)" stroke="#ff3d8e" stroke-width="1.5"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== BENCH ===== -->
+      <div class="page" data-page="bench">
+        <div class="page-header">
+          <div>
+            <div class="page-title">بنچمارک تونل</div>
+            <div class="page-subtitle">$ bench --in-tunnel --duration 30s</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn primary">▶ شروع تست</button>
+          </div>
+        </div>
+
+        <div class="row c-2">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>پارامترهای تست</div></div>
+            <div class="panel-body">
+              <div class="field"><label class="field-label">Duration (s)</label><input class="input" value="30"/></div>
+              <div class="field"><label class="field-label">Direction</label>
+                <div class="chip-group" data-toggle-group>
+                  <div class="chip">↑ Up</div>
+                  <div class="chip active">↓ Down</div>
+                  <div class="chip">↕ Both</div>
+                </div>
+              </div>
+              <div class="field"><label class="field-label">Parallel streams</label>
+                <div class="chip-group" data-toggle-group>
+                  <div class="chip">۱</div>
+                  <div class="chip">۴</div>
+                  <div class="chip active">۸</div>
+                  <div class="chip">۱۶</div>
+                </div>
+              </div>
+              <div class="field"><label class="field-label">Packet size</label><input class="input" value="1400"/></div>
+              <div class="field"><label class="field-label">Target</label><input class="input" value="iperf3 server (auto)"/></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--green)"></div>آخرین نتیجه</div></div>
+            <div class="panel-body">
+              <div class="spec-grid">
+                <div class="spec"><div class="spec-key">Throughput avg</div><div class="spec-val text-acid">۴۸۷.۲ Mbps</div></div>
+                <div class="spec"><div class="spec-key">Throughput peak</div><div class="spec-val">۵۱۲.۴ Mbps</div></div>
+                <div class="spec"><div class="spec-key">RTT min/avg/max</div><div class="spec-val">۳۶/۴۱/۶۷ ms</div></div>
+                <div class="spec"><div class="spec-key">Jitter</div><div class="spec-val">۲.۴ ms</div></div>
+                <div class="spec"><div class="spec-key">Packet loss</div><div class="spec-val text-acid">۰.۰۱٪</div></div>
+                <div class="spec"><div class="spec-key">FEC recovered</div><div class="spec-val">۱۲</div></div>
+                <div class="spec"><div class="spec-key">CPU peak</div><div class="spec-val">۴۲٪</div></div>
+                <div class="spec"><div class="spec-key">Verdict</div><div class="spec-val text-acid">EXCELLENT</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel mt-3">
+          <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>تاریخچه تست‌ها</div></div>
+          <div class="panel-body no-pad">
+            <table class="table">
+              <thead><tr><th>زمان</th><th>طول</th><th>جهت</th><th>Mbps avg</th><th>Mbps peak</th><th>Loss</th><th>Verdict</th></tr></thead>
+              <tbody>
+                <tr><td>۱۴۰۴/۰۲/۱۵ ۱۴:۳۲</td><td>۳۰s</td><td>down</td><td>۴۸۷.۲</td><td>۵۱۲.۴</td><td>۰.۰۱٪</td><td><span class="pill green">excellent</span></td></tr>
+                <tr><td>۱۴۰۴/۰۲/۱۵ ۱۲:۱۸</td><td>۳۰s</td><td>up</td><td>۴۶۲.۱</td><td>۴۹۸.۰</td><td>۰.۰۲٪</td><td><span class="pill green">excellent</span></td></tr>
+                <tr><td>۱۴۰۴/۰۲/۱۴ ۲۲:۴۸</td><td>۶۰s</td><td>both</td><td>۴۲۰.۴</td><td>۴۸۸.۰</td><td>۰.۱۲٪</td><td><span class="pill green">good</span></td></tr>
+                <tr><td>۱۴۰۴/۰۲/۱۴ ۱۸:۱۲</td><td>۳۰s</td><td>down</td><td>۳۹۸.۲</td><td>۴۵۰.۲</td><td>۰.۲۱٪</td><td><span class="pill yellow">acceptable</span></td></tr>
+                <tr><td>۱۴۰۴/۰۲/۱۴ ۱۶:۰۲</td><td>۳۰s</td><td>down</td><td>۲۸۲.۰</td><td>۳۲۲.۰</td><td>۲.۲٪</td><td><span class="pill red">poor</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SECURITY ===== -->
+      <div class="page" data-page="security">
+        <div class="page-header">
+          <div>
+            <div class="page-title">امنیت و Anti-SSRF</div>
+            <div class="page-subtitle">$ security --review</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn primary">ذخیره</button>
+          </div>
+        </div>
+
+        <div class="row c-2">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>سیاست‌های مسدودسازی outbound</div></div>
+            <div class="panel-body">
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Block private targets</div><div class="toggle-label-sub">10/8, 172.16/12, 192.168/16, 127/8</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Block CGNAT (100.64/10)</div><div class="toggle-label-sub">جلوگیری از پیمایش شبکه ISP</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Block link-local</div><div class="toggle-label-sub">169.254/16, fe80::/10</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">DNS rebinding protection</div><div class="toggle-label-sub">resolve مجدد قبل از connect</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Replay protection</div><div class="toggle-label-sub">window=2048 nonces</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">TLS cert pinning</div><div class="toggle-label-sub">peer cert hash match</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="field mt-3">
+                <label class="field-label">Custom blocklist (CIDR)</label>
+                <textarea class="textarea" style="min-height:120px">8.8.8.8/32
+1.1.1.1/32
+93.184.216.0/24</textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>دسترسی پنل</div></div>
+            <div class="panel-body">
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">2FA اجباری برای admin</div><div class="toggle-label-sub">TOTP</div></div><div class="toggle" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Rate limit ورود</div><div class="toggle-label-sub">۵ تلاش / ۵ دقیقه</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">IP whitelist</div><div class="toggle-label-sub">فقط از IPهای مشخص</div></div><div class="toggle" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Session timeout</div><div class="toggle-label-sub">۳۰ دقیقه idle</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="field mt-3"><label class="field-label">IPهای مجاز پنل</label>
+                <textarea class="textarea" style="min-height:80px" placeholder="0.0.0.0/0 (همه)">0.0.0.0/0</textarea>
+              </div>
+              <div class="field"><label class="field-label">CORS origins</label><input class="input" value="https://panel.your.tld"/></div>
+              <div class="field">
+                <label class="field-label">Audit log</label>
+                <div class="chip-group" data-toggle-group>
+                  <div class="chip active">verbose</div>
+                  <div class="chip">normal</div>
+                  <div class="chip">minimal</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== BACKUPS ===== -->
+      <div class="page" data-page="backups">
+        <div class="page-header">
+          <div>
+            <div class="page-title">پشتیبان‌گیری</div>
+            <div class="page-subtitle">$ backup.list · auto-backup</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn ghost btn-sm">آپلود فایل</button>
+            <button class="btn primary">پشتیبان فوری</button>
+          </div>
+        </div>
+
+        <div class="row c-2-1">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>پشتیبان‌های اخیر</div></div>
+            <div class="panel-body no-pad">
+              <table class="table">
+                <thead><tr><th>تاریخ</th><th>اندازه</th><th>نوع</th><th>محتوا</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td>۱۴۰۴/۰۲/۱۵ ۰۳:۰۰</td><td>۲.۴ MB</td><td><span class="pill cyan">auto</span></td><td>full</td><td><a class="table-action">restore</a><a class="table-action">دانلود</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td>۱۴۰۴/۰۲/۱۴ ۰۳:۰۰</td><td>۲.۴ MB</td><td><span class="pill cyan">auto</span></td><td>full</td><td><a class="table-action">restore</a><a class="table-action">دانلود</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td>۱۴۰۴/۰۲/۱۳ ۰۳:۰۰</td><td>۲.۳ MB</td><td><span class="pill cyan">auto</span></td><td>full</td><td><a class="table-action">restore</a><a class="table-action">دانلود</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td>۱۴۰۴/۰۲/۱۲ ۱۸:۲۲</td><td>۲.۳ MB</td><td><span class="pill purple">manual</span></td><td>full</td><td><a class="table-action">restore</a><a class="table-action">دانلود</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td>۱۴۰۴/۰۲/۱۰ ۰۳:۰۰</td><td>۲.۲ MB</td><td><span class="pill cyan">auto</span></td><td>users only</td><td><a class="table-action">restore</a><a class="table-action">دانلود</a><a class="table-action danger">×</a></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>زمان‌بندی</div></div>
+            <div class="panel-body">
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">پشتیبان روزانه</div><div class="toggle-label-sub">ساعت ۳ بامداد</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="field"><label class="field-label">ساعت اجرا</label><input class="input" value="03:00"/></div>
+              <div class="field"><label class="field-label">نگه‌داری (روز)</label><input class="input" value="14"/></div>
+              <div class="field">
+                <label class="field-label">شامل</label>
+                <div class="chip-group" data-toggle-group>
+                  <div class="chip active">full</div>
+                  <div class="chip">users only</div>
+                  <div class="chip">config only</div>
+                </div>
+              </div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">آپلود به remote</div><div class="toggle-label-sub">S3 / sFTP / Telegram</div></div><div class="toggle" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">رمزنگاری AES-256</div><div class="toggle-label-sub">با passphrase</div></div><div class="toggle on" data-toggle></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== NOTIFICATIONS ===== -->
+      <div class="page" data-page="notifications">
+        <div class="page-header">
+          <div>
+            <div class="page-title">اطلاع‌رسانی</div>
+            <div class="page-subtitle">$ notify.channels</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn ghost btn-sm">تست ارسال</button>
+            <button class="btn primary">ذخیره</button>
+          </div>
+        </div>
+
+        <div class="row c-2">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>کانال‌ها</div></div>
+            <div class="panel-body">
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Telegram Bot</div><div class="toggle-label-sub">@QUICochet_bot</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="field-row c-2">
+                <div class="field"><label class="field-label">Bot Token</label><input class="input" value="••••:•••••••••••" type="password"/></div>
+                <div class="field"><label class="field-label">Chat ID</label><input class="input" value="1234567890"/></div>
+              </div>
+              <div class="divider"></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Discord Webhook</div><div class="toggle-label-sub">#alerts</div></div><div class="toggle" data-toggle></div></div>
+              <div class="field"><label class="field-label">Webhook URL</label><input class="input" placeholder="https://discord.com/api/webhooks/..."/></div>
+              <div class="divider"></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Email (SMTP)</div><div class="toggle-label-sub">برای گزارش روزانه</div></div><div class="toggle" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Slack</div><div class="toggle-label-sub">webhook</div></div><div class="toggle" data-toggle></div></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--magenta)"></div>رویدادها</div></div>
+            <div class="panel-body">
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">قطعی تونل</div><div class="toggle-label-sub">tunnel down/up</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">spike packet loss</div><div class="toggle-label-sub">> ۲٪ پیوسته</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">CPU بالا</div><div class="toggle-label-sub">> ۸۵٪ برای ۵ دقیقه</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">RAM بالا</div><div class="toggle-label-sub">> ۹۰٪</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">disk full</div><div class="toggle-label-sub">> ۹۰٪</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">کاربر over-quota</div><div class="toggle-label-sub">> ۹۰٪ سهمیه</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">کاربر منقضی</div><div class="toggle-label-sub">۲۴h قبل از انقضا</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">گزارش روزانه</div><div class="toggle-label-sub">summary روزانه</div></div><div class="toggle" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">login failed</div><div class="toggle-label-sub">پنل ورود ناموفق</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">backup failed</div><div class="toggle-label-sub">شکست auto-backup</div></div><div class="toggle on" data-toggle></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SETTINGS ===== -->
+      <div class="page" data-page="settings">
+        <div class="page-header">
+          <div>
+            <div class="page-title">تنظیمات پنل</div>
+            <div class="page-subtitle">$ panel.config</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn primary">ذخیره</button>
+          </div>
+        </div>
+
+        <div class="tabs" data-tabs="st-tabs">
+          <div class="tab active" data-tab="st-general">عمومی</div>
+          <div class="tab" data-tab="st-admin">Admin</div>
+          <div class="tab" data-tab="st-update">آپدیت</div>
+          <div class="tab" data-tab="st-api">API</div>
+          <div class="tab" data-tab="st-about">درباره</div>
+        </div>
+
+        <div class="tab-panel active" data-tab="st-general">
+          <div class="row c-2">
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>عمومی</div></div>
+              <div class="panel-body">
+                <div class="field"><label class="field-label">پورت پنل</label><input class="input" value="9999"/></div>
+                <div class="field"><label class="field-label">آدرس bind</label><input class="input" value="0.0.0.0"/></div>
+                <div class="field"><label class="field-label">دامنه پنل</label><input class="input" value="panel.your.tld"/></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">HTTPS</div><div class="toggle-label-sub">Let's Encrypt</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="field"><label class="field-label">گواهی</label>
+                  <div class="chip-group" data-toggle-group>
+                    <div class="chip active">Auto (LE)</div>
+                    <div class="chip">Custom</div>
+                    <div class="chip">Self-signed</div>
+                  </div>
+                </div>
+                <div class="field"><label class="field-label">منطقه زمانی</label>
+                  <select class="select"><option>Asia/Tehran</option><option>UTC</option><option>Europe/Berlin</option></select>
+                </div>
+                <div class="field"><label class="field-label">زبان</label>
+                  <div class="chip-group" data-toggle-group>
+                    <div class="chip active">فارسی</div>
+                    <div class="chip">English</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>پیکربندی پیشرفته</div></div>
+              <div class="panel-body">
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Dark mode</div><div class="toggle-label-sub">پیش‌فرض تاریک</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Compact UI</div><div class="toggle-label-sub">density بیشتر</div></div><div class="toggle" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Realtime updates</div><div class="toggle-label-sub">WebSocket push</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="field"><label class="field-label">Refresh interval (s)</label><input class="input" value="2"/></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Animations</div><div class="toggle-label-sub">انیمیشن UI</div></div><div class="toggle on" data-toggle></div></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Send anonymized analytics</div><div class="toggle-label-sub">برای بهبود</div></div><div class="toggle" data-toggle></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab="st-admin">
+          <div class="row c-2">
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>حساب admin</div></div>
+              <div class="panel-body">
+                <div class="field"><label class="field-label">Username</label><input class="input" value="admin"/></div>
+                <div class="field"><label class="field-label">رمز عبور فعلی</label><input class="input" type="password"/></div>
+                <div class="field"><label class="field-label">رمز جدید</label><input class="input" type="password"/></div>
+                <div class="field"><label class="field-label">تأیید</label><input class="input" type="password"/></div>
+                <div class="divider"></div>
+                <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">2FA (TOTP)</div><div class="toggle-label-sub">Google Auth / Authy</div></div><div class="toggle" data-toggle></div></div>
+                <button class="btn">تنظیم 2FA</button>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title"><div class="panel-title-dot" style="background:var(--magenta)"></div>کاربران دیگر پنل</div></div>
+              <div class="panel-body no-pad">
+                <table class="table">
+                  <thead><tr><th>Username</th><th>نقش</th><th>آخرین ورود</th><th></th></tr></thead>
+                  <tbody>
+                    <tr><td>admin</td><td><span class="pill acid">admin</span></td><td>الان</td><td><a class="table-action">edit</a></td></tr>
+                    <tr><td>operator</td><td><span class="pill cyan">operator</span></td><td>۲h قبل</td><td><a class="table-action">edit</a><a class="table-action danger">×</a></td></tr>
+                    <tr><td>viewer</td><td><span class="pill gray">readonly</span></td><td>۳ روز قبل</td><td><a class="table-action">edit</a><a class="table-action danger">×</a></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab="st-update">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>آپدیت</div></div>
+            <div class="panel-body">
+              <div class="spec-grid">
+                <div class="spec"><div class="spec-key">نسخه فعلی</div><div class="spec-val text-acid">v0.4.1</div></div>
+                <div class="spec"><div class="spec-key">آخرین چک</div><div class="spec-val">۱ ساعت قبل</div></div>
+                <div class="spec"><div class="spec-key">آخرین نسخه</div><div class="spec-val text-acid">v0.4.1 (latest)</div></div>
+                <div class="spec"><div class="spec-key">channel</div><div class="spec-val">stable</div></div>
+              </div>
+              <div class="divider"></div>
+              <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">آپدیت خودکار</div><div class="toggle-label-sub">فقط patch versions</div></div><div class="toggle on" data-toggle></div></div>
+              <div class="field"><label class="field-label">کانال</label>
+                <div class="chip-group" data-toggle-group>
+                  <div class="chip active">stable</div>
+                  <div class="chip">beta</div>
+                  <div class="chip">nightly</div>
+                </div>
+              </div>
+              <div class="flex gap-2 mt-3">
+                <button class="btn">چک آپدیت</button>
+                <button class="btn primary">نصب آپدیت</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab="st-api">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title"><div class="panel-title-dot"></div>API Tokens</div></div>
+            <div class="panel-body">
+              <div class="field"><label class="field-label">Base URL</label><input class="input" readonly value="https://panel.your.tld/api/v1"/></div>
+              <div class="divider"></div>
+              <table class="table">
+                <thead><tr><th>نام</th><th>Token (preview)</th><th>scope</th><th>آخرین استفاده</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td>iran-agent</td><td class="mono">qcc_••••••••8a3f</td><td><span class="pill purple">full</span></td><td>الان</td><td><a class="table-action">rotate</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td>monitoring</td><td class="mono">qcc_••••••••2e91</td><td><span class="pill cyan">readonly</span></td><td>۱۰m</td><td><a class="table-action">rotate</a><a class="table-action danger">×</a></td></tr>
+                  <tr><td>backup-uploader</td><td class="mono">qcc_••••••••f44b</td><td><span class="pill yellow">backup</span></td><td>۲۲h</td><td><a class="table-action">rotate</a><a class="table-action danger">×</a></td></tr>
+                </tbody>
+              </table>
+              <button class="btn primary mt-3">+ توکن جدید</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel" data-tab="st-about">
+          <div class="panel">
+            <div class="panel-body" style="text-align:center;padding:40px">
+              <div class="logo-mark" style="margin:0 auto;width:48px;height:48px"></div>
+              <div class="page-title mt-3">QUICochet Control</div>
+              <div class="text-faint mono mt-1">v0.4.1 · build 2026-04-29</div>
+              <div class="mt-3 text-dim" style="max-width:480px;margin:0 auto;line-height:1.8">
+                پنل کنترل تونل QUICochet · سرور خارج. ابزار تونلینگ مبتنی بر QUIC با IP spoofing، obfuscation، multi-protocol Xray Core و کنترل از راه دور سرور ایران.
+              </div>
+              <div class="flex gap-2 mt-3" style="justify-content:center">
+                <button class="btn ghost btn-sm">GitHub</button>
+                <button class="btn ghost btn-sm">مستندات</button>
+                <button class="btn ghost btn-sm">گزارش باگ</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ STATUS BAR ============ -->
+  <div class="statusbar">
+    <div class="statusbar-item"><span style="color:var(--green)">●</span> connected</div>
+    <div class="statusbar-item">QUICochet v0.4.1</div>
+    <div class="statusbar-item">core: quic-go (patched)</div>
+    <div class="statusbar-item">go 1.25.0</div>
+    <div class="statusbar-spacer"></div>
+    <div class="statusbar-item">CPU ۳۴٪</div>
+    <div class="statusbar-item">RAM ۱.۴G</div>
+    <div class="statusbar-item">↑ ۴۱۲ Mbps</div>
+    <div class="statusbar-item">↓ ۳۸۷ Mbps</div>
+    <div class="statusbar-item">۲ سرور</div>
+    <div class="statusbar-item" id="clock">00:00:00</div>
+  </div>
+</div>
+
+<!-- ============ MODAL: ADD INBOUND ============ -->
+<div class="modal-overlay" id="modal-inbound">
+  <div class="modal lg">
+    <div class="modal-head">
+      <div class="modal-title">+ Inbound جدید</div>
+      <div class="modal-close" data-modal-close>×</div>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label class="field-label">پروتکل</label>
+        <div class="chip-group" data-toggle-group>
+          <div class="chip active">VLESS+TCP</div>
+          <div class="chip">VLESS+WS</div>
+          <div class="chip">VLESS+REALITY</div>
+          <div class="chip">VLESS+gRPC</div>
+          <div class="chip">Trojan</div>
+          <div class="chip">VMess</div>
+          <div class="chip">Shadowsocks 2022</div>
+        </div>
+      </div>
+      <div class="field-row c-2">
+        <div class="field"><label class="field-label">Tag</label><input class="input" value="main-tcp"/></div>
+        <div class="field"><label class="field-label">پورت داخلی</label><input class="input" value="8001"/></div>
+      </div>
+      <div class="field-row c-2">
+        <div class="field"><label class="field-label">پورت ایران</label><input class="input" value="443"/></div>
+        <div class="field"><label class="field-label">UUID</label><input class="input" value="b85ee23a-4f12-4d22-9100-7e4e2c0d8c8a"/></div>
+      </div>
+      <div class="field"><label class="field-label">Flow</label>
+        <select class="select"><option>xtls-rprx-vision</option><option>xtls-rprx-direct</option><option>none</option></select>
+      </div>
+      <div class="field-row c-2">
+        <div class="field"><label class="field-label">SNI</label><input class="input" value="cdn.akamai.net"/></div>
+        <div class="field"><label class="field-label">Reality target</label><input class="input" value="cdn.akamai.net:443"/></div>
+      </div>
+      <div class="toggle-row"><div class="toggle-label"><div class="toggle-label-main">Push به ایران</div><div class="toggle-label-sub">قانون port forward رو خودکار اضافه کن</div></div><div class="toggle on" data-toggle></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn primary">ساخت Inbound</button>
+      <button class="btn ghost" data-modal-close>انصراف</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: ADD USER ============ -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">+ کاربر جدید</div>
+      <div class="modal-close" data-modal-close>×</div>
+    </div>
+    <div class="modal-body">
+      <div class="field-row c-2">
+        <div class="field"><label class="field-label">نام</label><input class="input" placeholder="user@home"/></div>
+        <div class="field"><label class="field-label">UUID</label><input class="input" value="auto-generate"/></div>
+      </div>
+      <div class="field"><label class="field-label">Inbound</label>
+        <select class="select">
+          <option>main-tcp</option>
+          <option>fallback-ws</option>
+          <option>reality-pri</option>
+          <option>trojan-bk</option>
+        </select>
+      </div>
+      <div class="field-row c-2">
+        <div class="field"><label class="field-label">سهمیه (GB)</label><input class="input" value="200"/></div>
+        <div class="field"><label class="field-label">انقضا</label><input class="input" placeholder="YYYY/MM/DD"/></div>
+      </div>
+      <div class="field"><label class="field-label">گروه</label>
+        <div class="chip-group" data-toggle-group>
+          <div class="chip">guest</div>
+          <div class="chip active">basic</div>
+          <div class="chip">premium</div>
+          <div class="chip">vip</div>
+        </div>
+      </div>
+      <div class="field"><label class="field-label">یادداشت (اختیاری)</label><textarea class="textarea"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn primary">ساخت کاربر</button>
+      <button class="btn ghost" data-modal-close>انصراف</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOASTS ============ -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  var token = sessionStorage.getItem('qcc_token') || '';
+  function api(method, path, body){
+    var opts = { method: method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' };
+    if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+    if (body !== undefined) opts.body = JSON.stringify(body);
+    return fetch(path, opts).then(function(r){
+      if (r.status === 401) {
+        sessionStorage.removeItem('qcc_token'); token = '';
+        showLogin();
+        throw new Error('auth required');
+      }
+      return r.text().then(function(t){
+        try { return JSON.parse(t); } catch(e) { return t; }
+      });
+    });
+  }
+
+  // ---- Login ----
+  var loginEl = document.getElementById('login');
+  function showLogin(){ if (loginEl) loginEl.classList.remove('hidden'); }
+  function hideLogin(){ if (loginEl) loginEl.classList.add('hidden'); }
+
+  var loginBtn = document.getElementById('login-btn');
+  if (loginBtn) {
+    loginBtn.addEventListener('click', function(ev){
+      ev.preventDefault();
+      var u = document.getElementById('login-user').value.trim();
+      var p = document.getElementById('login-pass').value;
+      api('POST', '/api/login', { user: u, pass: p }).then(function(resp){
+        if (resp && resp.token) {
+          token = resp.token;
+          sessionStorage.setItem('qcc_token', token);
+          hideLogin();
+          loadAll();
+        } else {
+          alert('خطا در ورود: ' + (resp && resp.error || 'unknown'));
+        }
+      }).catch(function(e){ console.error(e); });
+    });
+    var pp = document.getElementById('login-pass');
+    if (pp) pp.addEventListener('keydown', function(e){ if(e.key==='Enter') loginBtn.click(); });
+  }
+
+  if (token) {
+    api('GET', '/api/me').then(function(){ hideLogin(); loadAll(); })
+                          .catch(function(){ showLogin(); });
+  } else {
+    showLogin();
+  }
+
+  // ---- Page navigation ----
+  var labels = {
+    dashboard: 'داشبورد', tunnel: 'تونل', inbounds: 'Inbound ها',
+    users: 'کاربران', subscription: 'Subscription',
+    routing: 'Routing', security: 'امنیت', logs: 'لاگ‌ها',
+    metrics: 'متریک', bench: 'Benchmark', backups: 'بک‌آپ',
+    notifications: 'اطلاع‌رسانی', settings: 'تنظیمات', iran: 'سرور ایران'
+  };
+  document.querySelectorAll('.nav-item[data-page]').forEach(function(item){
+    item.addEventListener('click', function(){
+      document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+      item.classList.add('active');
+      var page = item.getAttribute('data-page');
+      document.querySelectorAll('.page[data-page]').forEach(function(p){
+        p.style.display = p.getAttribute('data-page') === page ? '' : 'none';
+      });
+      var crumb = document.getElementById('breadcrumb');
+      if (crumb) crumb.textContent = labels[page] || page;
+      if (page === 'iran') loadIranStatus();
+      if (page === 'dashboard') loadDashboard();
+      if (page === 'users') loadUsers();
+      if (page === 'inbounds') loadInbounds();
+    });
+  });
+
+  document.querySelectorAll('.tabs').forEach(function(group){
+    group.querySelectorAll('.tab[data-tab]').forEach(function(tab){
+      tab.addEventListener('click', function(){
+        var name = tab.getAttribute('data-tab');
+        group.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+        tab.classList.add('active');
+        var container = group.parentElement;
+        container.querySelectorAll('.tab-panel[data-tab]').forEach(function(p){
+          p.classList.toggle('active', p.getAttribute('data-tab') === name);
+        });
+      });
+    });
+  });
+
+  document.querySelectorAll('.toggle[data-toggle]').forEach(function(t){
+    t.addEventListener('click', function(){ t.classList.toggle('on'); });
+  });
+  document.querySelectorAll('.chip-group[data-toggle-group]').forEach(function(g){
+    g.querySelectorAll('.chip').forEach(function(c){
+      c.addEventListener('click', function(){
+        g.querySelectorAll('.chip').forEach(function(cc){ cc.classList.remove('active'); });
+        c.classList.add('active');
+      });
+    });
+  });
+
+  // ===== Iran section auto-load =====
+  function loadIranStatus(){
+    api('GET', '/api/iran/status').then(function(s){
+      var slot = document.getElementById('iran-status-slot');
+      if (slot) {
+        if (s && s.connected) {
+          slot.innerHTML = '<span class="text-green">● متصل</span> · iran ip: <span class="mono">' + (s.iran_ip || '?') +
+                           '</span> · sessions=' + (s.sessions || 0) +
+                           ' · last seen: <span class="mono">' + (s.last_seen ? new Date(s.last_seen).toLocaleString('fa-IR') : '—') + '</span>';
+        } else {
+          slot.innerHTML = '<span class="text-yellow">○ منتظر heartbeat از سرور ایران…</span>';
+        }
+      }
+    }).catch(function(){});
+  }
+
+  function loadDashboard(){
+    api('GET', '/api/dashboard').then(function(d){
+      if (!d) return;
+      // populate stat cards
+      var fields = {
+        'stat-up':       (d.up_mbps || 0).toFixed(1) + ' Mbps',
+        'stat-down':     (d.down_mbps || 0).toFixed(1) + ' Mbps',
+        'stat-sessions': d.sessions || 0,
+        'stat-rtt':      (d.rtt_ms || 0).toFixed(1) + ' ms',
+        'stat-loss':     (d.loss_pct || 0).toFixed(2) + ' %',
+        'stat-cpu':      (d.cpu_pct || 0).toFixed(0) + ' %',
+        'stat-ram':      (d.ram_used_mb || 0).toFixed(0) + ' / ' + (d.ram_total_mb || 0).toFixed(0) + ' MB'
+      };
+      Object.keys(fields).forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.textContent = fields[id];
+      });
+    }).catch(function(){});
+  }
+
+  function loadUsers(){
+    api('GET', '/api/users').then(function(users){
+      var tbody = document.getElementById('users-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = (users || []).map(function(u){
+        return '<tr><td class="mono">' + (u.name||'') + '</td>' +
+               '<td class="mono" style="font-size:11px">' + (u.uuid||'').slice(0,8) + '...</td>' +
+               '<td>' + (u.group||'') + '</td>' +
+               '<td>' + Math.round((u.used_bytes||0) / 1e6) + ' / ' + Math.round((u.quota_bytes||0) / 1e9) + ' GB</td>' +
+               '<td>' + (u.enabled ? '<span class="text-green">●</span>' : '<span class="text-faint">○</span>') + '</td></tr>';
+      }).join('');
+    }).catch(function(){});
+  }
+
+  function loadInbounds(){
+    api('GET', '/api/inbounds').then(function(ibs){
+      var tbody = document.getElementById('inbounds-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = (ibs || []).map(function(i){
+        return '<tr><td class="mono">' + (i.tag||'') + '</td>' +
+               '<td>' + (i.protocol||'') + '/' + (i.network||'') + '</td>' +
+               '<td class="mono">:' + (i.local_port||'?') + ' → :' + (i.iran_port||'?') + '</td>' +
+               '<td>' + (i.security||'none') + '</td>' +
+               '<td>' + (i.enabled ? '<span class="text-green">●</span>' : '<span class="text-faint">○</span>') + '</td></tr>';
+      }).join('');
+    }).catch(function(){});
+  }
+
+  function loadAll(){
+    loadDashboard();
+    loadIranStatus();
+  }
+
+  // poll iran status every 8s while panel open
+  setInterval(function(){ if (token) loadIranStatus(); }, 8000);
+  setInterval(function(){ if (token) loadDashboard(); }, 5000);
+
+})();
+</script>
+
+</body>
+</html>

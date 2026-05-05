@@ -1,0 +1,37 @@
+{
+  "_": "Minimal client config. Performance defaults are auto-adaptive — do",
+  "__": "not set read_buffer / write_buffer / *_receive_window / pool_size",
+  "___": "unless you have a specific reason. See README for the full knob list.",
+
+  "mode": "client",
+  "transport": {
+    "type": "udp"
+  },
+  "listen_port": 0,
+  "server": {
+    "address": "SERVER_IP",
+    "port": 8080
+  },
+  "spoof": {
+    "source_ip": "CLIENT_SPOOF_IP",
+    "peer_spoof_ip": "SERVER_SPOOF_IP"
+  },
+  "crypto": {
+    "private_key": "",
+    "peer_public_key": ""
+  },
+  "inbounds": [
+    {
+      "type": "socks",
+      "listen": "127.0.0.1:1080"
+    }
+  ],
+  "obfuscation": {
+    "enabled": true,
+    "mode": "standard"
+  },
+  "logging": {
+    "level": "info",
+    "file": ""
+  }
+}

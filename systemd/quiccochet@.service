@@ -1,0 +1,31 @@
+[Unit]
+# This is a SYSTEMD TEMPLATE UNIT — note the "@" in the filename.
+# Instances are addressed as quiccochet@<name>.service where <name> is
+# the tunnel name (matches the .json config file in /etc/ispof/tunnels/).
+#
+# Example:
+#   systemctl start quiccochet@vpn-de.service
+# reads /etc/ispof/tunnels/vpn-de.json and starts a quiccochet process
+# bound to that config.
+Description=QUICochet tunnel: %i
+Documentation=https://github.com/TheMojtabam/ispof
+After=network-online.target
+Wants=network-online.target
+# Allow Ispof to bring this up/down without dependency loops
+PartOf=
+
+[Service]
+Type=simple
+# Tunnels need raw sockets / icmp / cap_net_admin for spoofing. Running
+# as root is the simplest option; if you want to drop privileges you can
+# add CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN with User=quiccochet.
+User=root
+ExecStart=/usr/local/bin/quiccochet -c /etc/ispof/tunnels/%i.json
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=15
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

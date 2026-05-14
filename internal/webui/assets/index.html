@@ -1,0 +1,2959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ispof — Admin Panel</title>
+<!-- Inline SVG favicon: an "I" on the orange brand color. data: URL means
+     no network fetch — works air-gapped, never 404s. -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ff9d4e'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='system-ui,sans-serif' font-size='20' font-weight='700' fill='%231a1f26'%3EI%3C/text%3E%3C/svg%3E" />
+<!-- Fonts: we used to fetch IBM Plex Sans/Mono from fonts.googleapis.com.
+     That fails on air-gapped servers and adds a network round-trip to every
+     page load. The system-font stack below renders identical visual weight
+     and works offline. -->
+<style>
+/* Arad Medium Dots — user-supplied Persian-friendly font. Served as a
+   static asset by the embedded file server. We keep the system stack
+   as a fallback for the first paint before the font loads and for any
+   missing glyph. `font-display: swap` shows fallback text instantly
+   and switches as soon as Arad arrives, avoiding the "invisible text"
+   flash that font-display: block would cause. */
+@font-face {
+  font-family: 'Arad';
+  src: url('/fonts/Arad-MediumDots2.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+/* ──────────── reset & tokens ──────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0d12;
+  --bg-elev:#11161f;
+  --surface:#13181f;
+  --surface-2:#1a1f29;
+  --border:#1f2630;
+  --border-strong:#2a323e;
+  --hover:#1a202a;
+
+  --text:#e8edf2;
+  --text-2:#a4adbb;
+  --text-3:#6e7886;
+  --text-4:#454d5a;
+
+  --accent:#ff9d4e;
+  --accent-dim:#cc7d3b;
+  --accent-bg:rgba(255,157,78,0.08);
+  --accent-bg-strong:rgba(255,157,78,0.16);
+
+  --ok:#5ec57d;
+  --ok-bg:rgba(94,197,125,0.1);
+  --warn:#ffb454;
+  --warn-bg:rgba(255,180,84,0.1);
+  --err:#f55757;
+  --err-bg:rgba(245,87,87,0.1);
+  --info:#5ab1ff;
+  --info-bg:rgba(90,177,255,0.1);
+
+  --font-sans:'Arad','IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'IBM Plex Mono','SF Mono',Menlo,Consolas,monospace;
+
+  --radius:4px;
+  --radius-lg:6px;
+
+  --sidebar-w:240px;
+  --topbar-h:52px;
+}
+
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:13.5px;font-weight:500;line-height:1.55;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{background:none;border:none;cursor:pointer}
+a{color:inherit;text-decoration:none}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-strong)}
+
+/* ──────────── layout ──────────── */
+.app{display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:var(--topbar-h) 1fr;height:100vh;
+  grid-template-areas:"sidebar topbar" "sidebar main"}
+
+/* ──────────── topbar ──────────── */
+.topbar{grid-area:topbar;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--border);background:var(--bg);position:relative;z-index:5}
+.topbar-left{display:flex;align-items:center;gap:18px}
+.breadcrumb{font-size:13px;color:var(--text-2);display:flex;align-items:center;gap:8px}
+.breadcrumb .sep{color:var(--text-4)}
+.breadcrumb .current{color:var(--text);font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:14px;font-family:var(--font-mono);font-size:11.5px;color:var(--text-2)}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:4px;background:var(--ok-bg);color:var(--ok);font-size:11px;font-weight:600;letter-spacing:.02em}
+.status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.status-pill.warn{background:var(--warn-bg);color:var(--warn)}
+.status-pill.err{background:var(--err-bg);color:var(--err)}
+.preview-pill{padding:3px 8px;border:1px dashed var(--accent-dim);color:var(--accent);font-size:10px;letter-spacing:.1em;text-transform:uppercase;border-radius:3px;font-family:var(--font-mono)}
+
+/* ──────────── sidebar ──────────── */
+.sidebar{grid-area:sidebar;background:var(--bg);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.brand{padding:14px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);height:var(--topbar-h)}
+.brand-logo{width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent) 0%,var(--accent-dim) 100%);border-radius:5px;color:#0a0d12;font-weight:700;font-size:13px;font-family:var(--font-mono);box-shadow:0 0 12px rgba(255,157,78,.35)}
+.brand-text{font-weight:700;font-size:14px;letter-spacing:-.01em}
+.brand-version{margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--text-3);padding:2px 6px;border:1px solid var(--border);border-radius:3px}
+
+.nav{padding:14px 12px;flex:1;overflow-y:auto}
+.nav-section{margin-bottom:18px}
+.nav-section-title{padding:0 10px 6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-4);font-weight:700}
+.nav-item{display:flex;align-items:center;gap:11px;padding:7px 10px;border-radius:var(--radius);color:var(--text-2);cursor:pointer;font-size:13px;font-weight:500;transition:all .12s;position:relative;margin-bottom:1px}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;stroke-width:1.75}
+.nav-item:hover{background:var(--hover);color:var(--text)}
+.nav-item.active{background:var(--surface);color:var(--text);font-weight:600}
+.nav-item.active::before{content:'';position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:2px;height:18px;background:var(--accent);border-radius:0 2px 2px 0}
+.nav-badge{margin-left:auto;font-family:var(--font-mono);font-size:10px;padding:1px 6px;background:var(--border);border-radius:3px;color:var(--text-3)}
+.nav-item.active .nav-badge{background:var(--accent-bg);color:var(--accent)}
+
+.sidebar-foot{padding:12px;border-top:1px solid var(--border)}
+.new-tunnel-btn{width:100%;padding:9px 12px;background:var(--accent);color:#0a0d12;border-radius:var(--radius);font-weight:700;font-size:12.5px;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .12s;letter-spacing:.01em}
+.new-tunnel-btn:hover{background:#ffac68;box-shadow:0 0 16px rgba(255,157,78,.4)}
+.new-tunnel-btn svg{width:14px;height:14px;stroke-width:2.5}
+
+/* ──────────── main content ──────────── */
+.main{grid-area:main;overflow-y:auto;padding:24px 28px;background:var(--bg)}
+.view{display:none;animation:fadeIn .18s ease-out}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.page-title{font-size:20px;font-weight:700;letter-spacing:-.015em}
+.page-subtitle{font-size:12.5px;color:var(--text-3);margin-top:3px}
+.page-actions{display:flex;gap:8px;align-items:center}
+
+/* ──────────── buttons ──────────── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);border-radius:var(--radius);font-size:12.5px;font-weight:600;transition:all .12s;cursor:pointer}
+.btn:hover{background:var(--surface-2);border-color:#3a4350}
+.btn svg{width:13px;height:13px;stroke-width:2}
+.btn-primary{background:var(--accent);color:#0a0d12;border-color:var(--accent)}
+.btn-primary:hover{background:#ffac68;border-color:#ffac68}
+.btn-ghost{background:transparent;border-color:transparent}
+.btn-ghost:hover{background:var(--hover);border-color:transparent}
+.btn-danger{color:var(--err);border-color:var(--err)}
+.btn-danger:hover{background:var(--err-bg)}
+.btn-sm{padding:4px 9px;font-size:11.5px}
+.btn-icon{padding:6px;width:30px;height:30px;justify-content:center}
+
+/* ──────────── cards / grids ──────────── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;position:relative;overflow:hidden}
+.stat-card .label{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;font-weight:600}
+.stat-card .value{font-size:24px;font-weight:700;font-family:var(--font-mono);letter-spacing:-.01em;display:flex;align-items:baseline;gap:5px}
+.stat-card .unit{font-size:11px;color:var(--text-3);font-weight:500}
+.stat-card .delta{margin-top:5px;font-size:11px;font-family:var(--font-mono);color:var(--text-3);display:flex;align-items:center;gap:4px}
+.stat-card .delta.up{color:var(--ok)}
+.stat-card .delta.down{color:var(--err)}
+.stat-card .spark{position:absolute;bottom:0;right:0;width:100%;height:36px;opacity:.55}
+
+.dash-row{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:20px}
+.dash-row.cols-3{grid-template-columns:repeat(3,1fr)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.panel-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border)}
+.panel-title{font-size:12.5px;font-weight:700;letter-spacing:-.005em}
+.panel-subtitle{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-top:2px}
+.panel-body{padding:16px}
+.panel-body.flush{padding:0}
+
+/* ──────────── charts ──────────── */
+.chart-container{padding:8px 6px}
+.chart-svg{width:100%;display:block}
+.chart-legend{display:flex;gap:14px;font-size:11px;color:var(--text-3);font-family:var(--font-mono);padding:0 10px 8px}
+.chart-legend .item{display:flex;align-items:center;gap:5px}
+.chart-legend .dot{width:8px;height:8px;border-radius:2px}
+
+/* ──────────── tunnels table ──────────── */
+.table-wrap{overflow-x:auto}
+.table{width:100%;border-collapse:collapse;font-size:12.5px}
+.table th{text-align:left;padding:11px 14px;font-weight:600;color:var(--text-3);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border);background:var(--bg-elev)}
+.table td{padding:13px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.table tr{transition:background .1s}
+.table tr.clickable:hover{background:var(--hover);cursor:pointer}
+.table tr:last-child td{border-bottom:none}
+.cell-name{font-weight:600;display:flex;align-items:center;gap:9px}
+.cell-name .tunnel-icon{width:26px;height:26px;border-radius:5px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:10px;color:var(--accent);font-weight:700;border:1px solid var(--border)}
+.cell-mono{font-family:var(--font-mono);font-size:11.5px;color:var(--text-2)}
+.cell-spark{width:120px}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:3px;font-size:10.5px;font-weight:600;letter-spacing:.02em;font-family:var(--font-mono);text-transform:lowercase}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.badge.running{background:var(--ok-bg);color:var(--ok)}
+.badge.stopped{background:rgba(110,120,134,.12);color:var(--text-3)}
+.badge.error{background:var(--err-bg);color:var(--err)}
+.badge.external{background:rgba(255,157,78,.15);color:#ffb96e}
+.badge.connecting{background:rgba(90,177,255,.15);color:#5ab1ff}
+.badge.connecting{background:var(--warn-bg);color:var(--warn)}
+.badge.idle{background:rgba(90,177,255,.08);color:var(--info)}
+.badge-tag{background:var(--surface-2);color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;font-size:10px;padding:2px 7px}
+.row-actions{display:flex;gap:4px;justify-content:flex-end}
+
+/* ──────────── filters bar ──────────── */
+.filters{display:flex;gap:8px;align-items:center;margin-bottom:14px}
+.search-input{flex:1;max-width:260px;position:relative}
+.search-input input{width:100%;padding:6px 10px 6px 30px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);outline:none;font-size:12.5px;transition:border-color .12s}
+.search-input input:focus{border-color:var(--accent-dim)}
+.search-input svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text-3)}
+.filter-select{padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);outline:none;font-size:12.5px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237d8590' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 8px center;padding-right:28px}
+
+/* ──────────── tunnel detail ──────────── */
+.detail-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.detail-title-block{display:flex;align-items:center;gap:14px}
+.detail-icon{width:42px;height:42px;border-radius:7px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--accent);font-family:var(--font-mono);font-weight:700;font-size:14px}
+.detail-name{font-size:19px;font-weight:700;letter-spacing:-.015em;display:flex;align-items:center;gap:10px}
+.detail-meta{font-size:11.5px;color:var(--text-3);font-family:var(--font-mono);margin-top:4px;display:flex;gap:14px}
+.detail-meta span{display:inline-flex;align-items:center;gap:5px}
+
+.subtabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px}
+.subtab{padding:9px 16px;font-size:12.5px;color:var(--text-3);font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;position:relative;top:1px}
+.subtab:hover{color:var(--text-2)}
+.subtab.active{color:var(--text);border-bottom-color:var(--accent)}
+.subtab .count{margin-left:6px;font-family:var(--font-mono);font-size:10px;padding:1px 6px;background:var(--surface);border-radius:3px}
+.subview{display:none}
+.subview.active{display:block}
+
+/* ──────────── overview / metric tiles ──────────── */
+.metric-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.metric .label{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:6px}
+.metric .value{font-size:16px;font-weight:700;font-family:var(--font-mono);letter-spacing:-.01em}
+.metric .sub{font-size:10.5px;color:var(--text-3);font-family:var(--font-mono);margin-top:3px}
+
+/* ──────────── config form ──────────── */
+.config-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:14px;overflow:hidden}
+.config-section-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.config-section-header:hover{background:var(--hover)}
+.config-section-title{font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:9px}
+.config-section-title svg{width:14px;height:14px;color:var(--text-3);transition:transform .15s}
+.config-section.collapsed .config-section-title svg.chev{transform:rotate(-90deg)}
+.config-section.collapsed .config-section-body{display:none}
+.config-section-body{padding:18px 20px}
+.config-section .badge-tag{margin-left:6px}
+
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px}
+.form-grid.cols-1{grid-template-columns:1fr}
+.form-grid.cols-3{grid-template-columns:repeat(3,1fr)}
+.field{display:flex;flex-direction:column;gap:5px}
+.field-label{font-size:11.5px;color:var(--text-2);font-weight:600;display:flex;align-items:center;gap:6px}
+.field-label .req{color:var(--err)}
+.field-label .info-tip{color:var(--text-4);cursor:help}
+.field-hint{font-size:10.5px;color:var(--text-3);line-height:1.5;font-family:var(--font-mono)}
+.input,.textarea,.select{padding:7px 10px;background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);outline:none;font-family:var(--font-mono);font-size:12px;transition:border-color .12s;width:100%}
+.input:focus,.textarea:focus,.select:focus{border-color:var(--accent-dim)}
+.input::placeholder{color:var(--text-4)}
+.textarea{font-family:var(--font-mono);min-height:60px;resize:vertical;line-height:1.5}
+.select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237d8590' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 9px center;padding-right:28px;cursor:pointer}
+.input-with-action{display:flex;gap:6px}
+.input-with-action .input{flex:1}
+
+.toggle{position:relative;display:inline-flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+.toggle input{display:none}
+.toggle-track{width:30px;height:17px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;position:relative;transition:all .15s}
+.toggle-thumb{position:absolute;width:11px;height:11px;background:var(--text-3);border-radius:50%;top:2px;left:2px;transition:all .15s}
+.toggle input:checked + .toggle-track{background:var(--accent-bg-strong);border-color:var(--accent-dim)}
+.toggle input:checked + .toggle-track .toggle-thumb{background:var(--accent);left:16px}
+.toggle-label{font-size:12px}
+
+.radio-group{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.radio-card{padding:11px 12px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .12s;background:var(--bg-elev);position:relative}
+.radio-card:hover{border-color:var(--border-strong);background:var(--surface-2)}
+.radio-card.selected{border-color:var(--accent);background:var(--accent-bg)}
+.radio-card.selected::before{content:'';position:absolute;top:8px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.radio-card .name{font-weight:700;font-size:12.5px;font-family:var(--font-mono);margin-bottom:3px}
+.radio-card .desc{font-size:10.5px;color:var(--text-3);line-height:1.4}
+
+/* ──────────── chip list (spoof IPs) ──────────── */
+.chip-list{display:flex;flex-wrap:wrap;gap:6px;padding:7px 8px;background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius);min-height:36px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;background:var(--surface-2);border:1px solid var(--border);border-radius:3px;font-family:var(--font-mono);font-size:11.5px}
+.chip.healthy{border-color:rgba(94,197,125,.25)}
+.chip.quarantine{border-color:rgba(245,87,87,.3);background:var(--err-bg);color:var(--err)}
+.chip .dot{width:5px;height:5px;border-radius:50%}
+.chip.healthy .dot{background:var(--ok)}
+.chip.quarantine .dot{background:var(--err)}
+.chip .remove{color:var(--text-4);cursor:pointer;padding:0 2px;line-height:1}
+.chip .remove:hover{color:var(--err)}
+.chip-input{background:transparent;border:none;outline:none;flex:1;min-width:120px;color:var(--text);font-family:var(--font-mono);font-size:11.5px;padding:3px 4px}
+
+/* ──────────── peers list ──────────── */
+.peer-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px}
+.peer-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.peer-name{font-weight:700;font-size:13.5px;font-family:var(--font-mono);display:flex;align-items:center;gap:8px}
+.peer-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;font-family:var(--font-mono);font-size:11.5px}
+.peer-stats .lbl{color:var(--text-3);font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+
+/* ──────────── flow diagram ──────────── */
+.flow-diag{background:var(--bg-elev);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px 18px;margin-bottom:18px;text-align:center;font-family:var(--font-mono);font-size:11.5px}
+.flow-diag svg{max-width:100%}
+
+/* ──────────── logs viewer ──────────── */
+.logs-viewer{background:#070a0e;border:1px solid var(--border);border-radius:var(--radius-lg);height:560px;overflow-y:auto;font-family:var(--font-mono);font-size:11.5px;padding:8px 0}
+.log-line{padding:2px 16px;line-height:1.55;display:grid;grid-template-columns:165px 60px 80px 1fr;gap:10px;border-left:2px solid transparent}
+.log-line:hover{background:rgba(255,255,255,.025)}
+.log-line.lvl-info{border-left-color:var(--info)}
+.log-line.lvl-warn{border-left-color:var(--warn)}
+.log-line.lvl-err{border-left-color:var(--err)}
+.log-line.lvl-dbg{border-left-color:var(--text-4)}
+.log-time{color:var(--text-4)}
+.log-level{font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em}
+.log-level.info{color:var(--info)}
+.log-level.warn{color:var(--warn)}
+.log-level.err{color:var(--err)}
+.log-level.dbg{color:var(--text-3)}
+.log-comp{color:var(--accent);font-weight:600}
+.log-msg{color:var(--text)}
+.log-msg .kv{color:var(--text-3)}
+.log-msg .kv b{color:var(--text-2);font-weight:600}
+
+/* ──────────── tools ──────────── */
+.tool-result{background:#070a0e;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;font-family:var(--font-mono);font-size:11.5px;color:var(--text-2);white-space:pre-wrap;word-break:break-all;line-height:1.6}
+.tool-result .k{color:var(--accent)}
+.tool-result .ok{color:var(--ok)}
+.tool-result .err{color:var(--err)}
+
+/* ──────────── modal ──────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(2px);display:none;align-items:flex-start;justify-content:center;padding-top:40px;z-index:20}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--border-strong);border-radius:var(--radius-lg);width:90%;max-width:780px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;animation:slideUp .25s cubic-bezier(.16,1,.3,1)}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)}
+.modal-title{font-weight:700;font-size:14.5px}
+.modal-close{color:var(--text-3);padding:5px;border-radius:var(--radius)}
+.modal-close:hover{background:var(--hover);color:var(--text)}
+.modal-body{padding:22px 24px;overflow-y:auto;flex:1}
+.modal-footer{padding:13px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--bg-elev)}
+
+/* wizard steps */
+.steps{display:flex;justify-content:space-between;margin-bottom:24px;position:relative}
+.steps::before{content:'';position:absolute;top:12px;left:14px;right:14px;height:1px;background:var(--border);z-index:0}
+.step{display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1;background:var(--bg);padding:0 10px}
+.step-circle{width:24px;height:24px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;color:var(--text-3);font-weight:700;transition:all .15s}
+.step.done .step-circle{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.step.active .step-circle{background:var(--accent);border-color:var(--accent);color:#0a0d12;box-shadow:0 0 0 4px rgba(255,157,78,.15)}
+.step-label{font-size:10.5px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.step.active .step-label{color:var(--text)}
+
+.wizard-page{display:none}
+.wizard-page.active{display:block}
+.wizard-h{font-size:15px;font-weight:700;margin-bottom:5px}
+.wizard-sub{font-size:12px;color:var(--text-3);margin-bottom:18px}
+
+.code-block{background:#070a0e;border:1px solid var(--border);border-radius:var(--radius);padding:14px;font-family:var(--font-mono);font-size:11.5px;line-height:1.6;color:var(--text-2);white-space:pre-wrap;overflow-x:auto;max-height:280px;overflow-y:auto}
+.code-block .key{color:#9bd1ff}
+.code-block .str{color:#ffce85}
+.code-block .num{color:#a5e75a}
+.code-block .bool{color:#ff85d4}
+.code-block .punct{color:var(--text-4)}
+
+/* ──────────── toast ──────────── */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:50;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius);padding:10px 14px;font-size:12.5px;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,.5);min-width:240px;display:flex;align-items:center;gap:10px;animation:slideIn .25s cubic-bezier(.16,1,.3,1);pointer-events:auto;border-left:3px solid var(--ok)}
+.toast.warn{border-left-color:var(--warn)}
+.toast.err{border-left-color:var(--err)}
+.toast.info{border-left-color:var(--info)}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.toast svg{width:16px;height:16px;flex-shrink:0}
+.toast.ok svg{color:var(--ok)}
+.toast.warn svg{color:var(--warn)}
+.toast.err svg{color:var(--err)}
+.toast.info svg{color:var(--info)}
+
+/* ──────────── empty states ──────────── */
+.empty{padding:60px 20px;text-align:center;color:var(--text-3)}
+.empty svg{width:38px;height:38px;color:var(--text-4);margin-bottom:12px}
+.empty .title{font-size:14px;color:var(--text-2);margin-bottom:5px}
+.empty .desc{font-size:12px;max-width:340px;margin:0 auto;line-height:1.5}
+
+/* ──────────── tunnel-type icons ──────────── */
+.transport-udp{color:#5ab1ff}
+.transport-icmp{color:#ffb454}
+.transport-icmpv6{color:#ff85d4}
+.transport-raw{color:var(--ok)}
+.transport-syn_udp{color:var(--accent)}
+
+/* utility */
+.flex{display:flex}.flex-1{flex:1}.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}
+.mb-1{margin-bottom:4px}.mb-2{margin-bottom:8px}.mb-3{margin-bottom:12px}.mb-4{margin-bottom:16px}.mb-5{margin-bottom:20px}
+.mono{font-family:var(--font-mono)}
+.text-3{color:var(--text-3)}.text-ok{color:var(--ok)}.text-warn{color:var(--warn)}.text-err{color:var(--err)}.text-info{color:var(--info)}.text-accent{color:var(--accent)}
+.muted{color:var(--text-3)}
+.right{text-align:right}
+.center{text-align:center}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ──────────── sidebar ──────────── -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">Q</div>
+      <div class="brand-text">Ispof</div>
+      <div class="brand-version" id="brand-version">v…</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Overview</div>
+        <div class="nav-item active" data-view="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </div>
+        <div class="nav-item" data-view="tunnels">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 17V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10"/><circle cx="8" cy="12" r="1"/><circle cx="16" cy="12" r="1"/><path d="M4 17h16"/><path d="M9 21h6"/></svg>
+          Tunnels <span class="nav-badge" id="nav-tunnels-count">0</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">Operations</div>
+        <div class="nav-item" data-view="tools">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          Tools
+        </div>
+        <div class="nav-item" data-view="logs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          Logs
+        </div>
+        <div class="nav-item" data-view="metrics">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v18h18"/><polyline points="7 14 12 9 16 13 21 8"/></svg>
+          Metrics <span class="nav-badge">live</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">System</div>
+        <div class="nav-item" data-view="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </div>
+        <div class="nav-item" data-view="about">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          About
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="new-tunnel-btn" onclick="openNewTunnelModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Tunnel
+      </button>
+    </div>
+  </aside>
+
+  <!-- ──────────── topbar ──────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="breadcrumb">
+        <span>Ispof</span>
+        <span class="sep">/</span>
+        <span class="current" id="bc-current">Dashboard</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="status-pill" id="conn-pill"><span class="dot"></span>connecting...</span>
+      <span class="mono" id="resource-stats">—</span>
+      <span class="mono" id="clock">--:--:--</span>
+    </div>
+  </header>
+
+  <!-- ──────────── main ──────────── -->
+  <main class="main">
+
+    <!-- ─────── DASHBOARD ─────── -->
+    <section class="view active" data-view="dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle">Aggregate state across all configured tunnels</div>
+        </div>
+        <div class="page-actions">
+          <div class="text-3" style="font-size:11.5px;display:flex;align-items:center;gap:6px;padding:0 8px">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="10"/></svg>
+            live · 5s push · 5 min history
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Active Tunnels</div>
+          <div class="value"><span id="kpi-active">0</span><span class="unit" id="kpi-active-total">/ 0</span></div>
+          <div class="delta" id="kpi-active-sub">—</div>
+          <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Throughput</div>
+          <div class="value"><span id="kpi-tput">0</span><span class="unit" id="kpi-tput-unit">B/s</span></div>
+          <div class="delta" id="kpi-tput-sub">rx + tx (live)</div>
+          <svg id="spark-tput" class="spark" viewBox="0 0 200 36" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="stat-card">
+          <div class="label">Packet Drops</div>
+          <div class="value"><span id="kpi-loss">0</span><span class="unit" id="kpi-loss-unit">pkt/s</span></div>
+          <div class="delta" id="kpi-loss-sub">aggregate · live</div>
+          <svg id="spark-loss" class="spark" viewBox="0 0 200 36" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="stat-card">
+          <div class="label">Active Sessions</div>
+          <div class="value"><span id="kpi-fds">0</span><span class="unit" id="kpi-fds-unit">sess</span></div>
+          <div class="delta" id="kpi-fds-sub">across all tunnels</div>
+          <svg class="spark" viewBox="0 0 200 36" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+
+      <div class="dash-row">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Throughput · all tunnels</div>
+              <div class="panel-subtitle">last 5 minutes · bytes/sec</div>
+            </div>
+            <div class="chart-legend">
+              <span class="item"><span class="dot" style="background:var(--accent)"></span>tx</span>
+              <span class="item"><span class="dot" style="background:var(--info)"></span>rx</span>
+            </div>
+          </div>
+          <div class="panel-body">
+            <svg id="chart-tput" class="chart-svg" viewBox="0 0 800 200" preserveAspectRatio="none"></svg>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Packet loss</div>
+              <div class="panel-subtitle">% lost / sent</div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <svg id="chart-loss" class="chart-svg" viewBox="0 0 400 200" preserveAspectRatio="none"></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-row cols-3">
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">QUIC pool · health</div></div>
+          <div class="panel-body" id="pool-grid"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Spoof IP pool</div></div>
+          <div class="panel-body" id="spoof-grid"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Recent events</div></div>
+          <div class="panel-body" id="events-list" style="padding:6px 0"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div><div class="panel-title">Tunnels at a glance</div></div>
+          <button class="btn btn-sm btn-ghost" onclick="navigate('tunnels')">view all →</button>
+        </div>
+        <div class="panel-body flush table-wrap">
+          <table class="table" id="dash-tunnels"></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────── TUNNELS LIST ─────── -->
+    <section class="view" data-view="tunnels">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Tunnels</div>
+          <div class="page-subtitle">All configured tunnels managed by this daemon</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn" onclick="openDiscoveryModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Discover existing
+          </button>
+          <button class="btn btn-primary" onclick="openNewTunnelModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Tunnel
+          </button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="search-input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="filter-search" placeholder="Search by name, IP, peer..." oninput="applyFilters()"/>
+        </div>
+        <select class="filter-select" id="filter-status" onchange="applyFilters()"><option value="">all status</option><option>running</option><option>stopped</option><option>error</option></select>
+        <select class="filter-select" id="filter-mode" onchange="applyFilters()"><option value="">all modes</option><option>client</option><option>server</option></select>
+        <select class="filter-select" id="filter-transport" onchange="applyFilters()"><option value="">all transports</option><option>udp</option><option>icmp</option><option>icmpv6</option><option>raw</option><option>syn_udp</option></select>
+      </div>
+
+      <div class="panel">
+        <div class="panel-body flush table-wrap">
+          <table class="table" id="tunnels-table"></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────── TUNNEL DETAIL ─────── -->
+    <section class="view" data-view="tunnel-detail">
+      <button class="btn btn-ghost btn-sm mb-3" onclick="navigate('tunnels')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>
+        back to tunnels
+      </button>
+      <div class="detail-header" id="detail-header"></div>
+      <div class="subtabs">
+        <div class="subtab active" data-sub="overview">Overview</div>
+        <div class="subtab" data-sub="config">Configuration</div>
+        <div class="subtab" data-sub="peers" id="peers-tab">Peers <span class="count" id="peers-count">0</span></div>
+        <div class="subtab" data-sub="metrics">Metrics</div>
+        <div class="subtab" data-sub="logs">Logs</div>
+        <div class="subtab" data-sub="raw" title="Edit the entire JSON config directly">Raw JSON</div>
+      </div>
+
+      <div class="subview active" data-sub="overview">
+        <div class="metric-grid" id="detail-metrics"></div>
+        <div class="dash-row">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Live throughput</div></div>
+            <div class="panel-body">
+              <svg id="detail-tput" class="chart-svg" viewBox="0 0 800 200" preserveAspectRatio="none"></svg>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Spoof IP health</div></div>
+            <div class="panel-body" id="detail-spoof"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Connection flow</div></div>
+          <div class="panel-body flow-diag" id="detail-flow"></div>
+        </div>
+      </div>
+
+      <div class="subview" data-sub="config" id="config-form"></div>
+      <div class="subview" data-sub="peers" id="peers-list"></div>
+
+      <div class="subview" data-sub="metrics">
+        <div class="metric-grid" id="metrics-tiles"></div>
+        <div class="dash-row">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">RTT (ms)</div></div>
+            <div class="panel-body"><svg id="rtt-chart" class="chart-svg" viewBox="0 0 800 200" preserveAspectRatio="none"></svg></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Packet loss</div></div>
+            <div class="panel-body"><svg id="loss-chart-d" class="chart-svg" viewBox="0 0 400 200" preserveAspectRatio="none"></svg></div>
+          </div>
+        </div>
+        <div class="dash-row">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">QUIC streams · open</div></div>
+            <div class="panel-body"><svg id="streams-chart" class="chart-svg" viewBox="0 0 800 200" preserveAspectRatio="none"></svg></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">UDP routes</div></div>
+            <div class="panel-body"><svg id="routes-chart" class="chart-svg" viewBox="0 0 400 200" preserveAspectRatio="none"></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="subview" data-sub="logs">
+        <div class="filters">
+          <div class="search-input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="log-filter" placeholder="Filter logs..." oninput="renderLogLines()"/></div>
+          <select class="filter-select" id="log-level-filter" onchange="renderLogLines()"><option value="">all levels</option><option>debug</option><option>info</option><option>warn</option><option>error</option></select>
+          <button class="btn btn-sm" id="log-live-btn" onclick="toggleLiveLogTail()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>
+            <span id="log-live-label">live tail</span>
+          </button>
+          <button class="btn btn-sm" onclick="loadTunnelLogs(state.selectedId)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Refresh
+          </button>
+          <button class="btn btn-sm" onclick="exportLogs()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+          </button>
+        </div>
+        <div class="logs-viewer" id="detail-logs"></div>
+      </div>
+
+      <div class="subview" data-sub="raw">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Raw JSON config</div>
+              <div class="panel-subtitle">Full editor · every quiccochet field is reachable from here</div>
+            </div>
+            <div class="flex gap-2">
+              <button class="btn btn-sm" onclick="formatRawConfig()">Format</button>
+              <button class="btn btn-sm" onclick="resetRawConfig()">Reset</button>
+              <button class="btn btn-primary btn-sm" onclick="saveRawConfig()">Save changes</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <p class="text-3 mb-3">Edit any field directly — this is the exact JSON written to <span class="mono">/etc/ispof/tunnels/&lt;name&gt;.json</span>. quiccochet ignores unknown keys, so panel-managed metadata (<span class="mono">_ispof_imported_from</span>, <span class="mono">created_at</span>) round-trips safely. Changing the <span class="mono">name</span> field is not allowed; rename by creating a new tunnel and deleting the old one. After saving, restart the tunnel for the new config to take effect.</p>
+            <textarea class="textarea mono" id="raw-config-text" rows="28" style="font-size:12px;tab-size:2;line-height:1.5;width:100%;font-family:var(--font-mono);background:var(--bg-elev);border:1px solid var(--border);padding:12px;border-radius:6px;color:var(--text);white-space:pre" spellcheck="false"></textarea>
+            <div class="text-3" id="raw-config-status" style="font-size:11px;margin-top:8px;min-height:18px"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────── TOOLS ─────── -->
+    <section class="view" data-view="tools">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Tools</div>
+          <div class="page-subtitle">X25519 key generation (pre-signed, copy into your tunnel config)</div>
+        </div>
+      </div>
+
+      <div class="subview active" data-tool="keygen">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Generate X25519 key pair</div>
+              <div class="panel-subtitle">private key → your config · public key → peer</div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <p class="text-3 mb-4">Generates an X25519 key pair using <span class="mono">crypto/ecdh</span> from the Go standard library. The private key stays in this tunnel's config (file mode 0600); the public key is shared with the remote peer.</p>
+            <div class="flex gap-2 mb-4" style="margin-top:14px">
+              <button class="btn btn-primary" onclick="mockKeygen()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Generate key pair
+              </button>
+            </div>
+            <div id="keygen-result" style="display:none">
+              <div class="field mb-3">
+                <div class="field-label">Private Key <span class="text-err">· keep secret · put in this tunnel's crypto.private_key</span></div>
+                <div class="input-with-action">
+                  <input class="input" id="kg-priv" readonly />
+                  <button class="btn btn-icon" onclick="copyVal('kg-priv')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                </div>
+              </div>
+              <div class="field mb-3">
+                <div class="field-label">Public Key · share with peer (their crypto.peer_public_key)</div>
+                <div class="input-with-action">
+                  <input class="input" id="kg-pub" readonly />
+                  <button class="btn btn-icon" onclick="copyVal('kg-pub')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────── LOGS ─────── -->
+    <section class="view" data-view="logs">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Event log</div>
+          <div class="page-subtitle">Lifecycle + state-change events across all tunnels</div>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-sm" onclick="renderGlobalLogsView()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Refresh
+          </button>
+          <button class="btn btn-sm" onclick="exportGlobalLogs()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+          </button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="search-input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="global-logs-search" placeholder="Filter by tunnel or message text..." oninput="renderGlobalLogsView()"/>
+        </div>
+        <select class="filter-select" id="global-logs-tunnel" onchange="renderGlobalLogsView()"><option value="">all tunnels</option></select>
+        <select class="filter-select" id="global-logs-level" onchange="renderGlobalLogsView()"><option value="">all levels</option><option>info</option><option>warn</option><option>error</option></select>
+        <select class="filter-select" id="global-logs-type" onchange="renderGlobalLogsView()"><option value="">all event types</option><option>started</option><option>stopped</option><option>restarted</option><option>created</option><option>updated</option><option>deleted</option><option>state_change</option><option>discovery</option><option>imported</option><option>failed</option></select>
+      </div>
+
+      <div class="logs-viewer" id="global-logs"></div>
+    </section>
+
+    <!-- ─────── METRICS ─────── -->
+    <section class="view" data-view="metrics">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Metrics</div>
+          <div class="page-subtitle" id="metrics-subtitle">Prometheus exporter · scraped every 5s</div>
+        </div>
+        <div class="page-actions">
+          <div class="text-3" style="font-size:11.5px;display:flex;align-items:center;gap:6px;padding:0 8px">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="10"/></svg>
+            scraping every 10s
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card"><div class="label">tunnels scraping ok</div><div class="value" id="met-up">0<span class="unit">/ 0</span></div></div>
+        <div class="stat-card"><div class="label">aggregate rx + tx</div><div class="value mono" id="met-tput" style="font-size:18px">0 B/s</div></div>
+        <div class="stat-card"><div class="label">total bytes_in</div><div class="value mono" id="met-bytes-in" style="font-size:18px">0 B</div></div>
+        <div class="stat-card"><div class="label">total bytes_out</div><div class="value mono" id="met-bytes-out" style="font-size:18px">0 B</div></div>
+      </div>
+
+      <div class="panel mb-4">
+        <div class="panel-header"><div class="panel-title">Per-tunnel breakdown</div></div>
+        <div class="panel-body flush table-wrap">
+          <table class="table" id="peer-metrics"></table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><div><div class="panel-title">Raw metrics endpoints</div><div class="panel-subtitle">paste into prometheus.yml</div></div></div>
+        <div class="panel-body">
+          <div class="code-block" id="prom-config">no tunnels with metrics enabled yet</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────── SETTINGS ─────── -->
+    <section class="view" data-view="settings">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Settings</div>
+          <div class="page-subtitle">Read-only view of the panel's current configuration. Most knobs live in <span class="mono">/etc/default/ispof</span> and require a restart.</div>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-section-header" onclick="toggleSection(this)"><div class="config-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          Web Panel
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg>
+        </div></div>
+        <div class="config-section-body">
+          <div class="form-grid mono" style="font-size:12px" id="settings-panel-info">loading...</div>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-section-header" onclick="toggleSection(this)"><div class="config-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 4v16"/></svg>
+          To change these
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg>
+        </div></div>
+        <div class="config-section-body">
+          <p class="text-3 mb-3">Edit <span class="mono">/etc/default/ispof</span> and run <span class="mono">systemctl restart ispof</span>. Available env vars:</p>
+          <div class="code-block"><span class="punct">ISPOF_LISTEN</span><span class="key">=</span>0.0.0.0:3000          <span class="comment"># bind address:port</span>
+<span class="punct">ISPOF_LOG_LEVEL</span><span class="key">=</span>info               <span class="comment"># debug | info | warn | error</span>
+<span class="punct">ISPOF_AUTH</span><span class="key">=</span>admin:&lt;password&gt;        <span class="comment"># basic auth (empty = no auth, loopback only)</span>
+<span class="punct">ISPOF_SCRAPE_INTERVAL</span><span class="key">=</span>10s          <span class="comment"># Prometheus scrape cadence</span>
+<span class="punct">ISPOF_TUNNELS_DIR</span><span class="key">=</span>/etc/ispof/tunnels <span class="comment"># where configs are stored</span></div>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <div class="config-section-header" onclick="toggleSection(this)"><div class="config-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          System Info
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg>
+        </div></div>
+        <div class="config-section-body">
+          <div class="form-grid mono" style="font-size:11.5px" id="settings-system-info">loading...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────── ABOUT ─────── -->
+    <section class="view" data-view="about">
+      <div class="page-header">
+        <div>
+          <div class="page-title">About Ispof</div>
+          <div class="page-subtitle">High-performance L3/4 tunneling proxy with bidirectional IP spoofing</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-body">
+          <p class="text-3 mb-3">Ispof is a tunneling proxy with mutual IP spoofing and QUIC transport, designed to bypass DPI and stateful firewalls in restrictive network environments.</p>
+          <div class="form-grid mono" style="font-size:11.5px">
+            <div><span class="text-3">version</span><br/>v2.0.2</div>
+            <div><span class="text-3">commit</span><br/>a3f7b9c</div>
+            <div><span class="text-3">built</span><br/>2026-05-12T14:22:08Z</div>
+            <div><span class="text-3">license</span><br/>MIT</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ──────────── modal: new tunnel wizard ──────────── -->
+<div class="modal-overlay" id="new-tunnel-modal">
+  <div class="modal" style="max-width:820px">
+    <div class="modal-header">
+      <div class="modal-title">New Tunnel · setup wizard</div>
+      <button class="modal-close" onclick="closeNewTunnelModal()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="steps" id="wizard-steps">
+        <div class="step active" data-step="1"><div class="step-circle">1</div><div class="step-label">Basic</div></div>
+        <div class="step" data-step="2"><div class="step-circle">2</div><div class="step-label">Transport</div></div>
+        <div class="step" data-step="3"><div class="step-circle">3</div><div class="step-label">Network</div></div>
+        <div class="step" data-step="4"><div class="step-circle">4</div><div class="step-label">Crypto</div></div>
+        <div class="step" data-step="5"><div class="step-circle">5</div><div class="step-label">Spoofing</div></div>
+        <div class="step" data-step="6"><div class="step-circle">6</div><div class="step-label">Advanced</div></div>
+        <div class="step" data-step="7"><div class="step-circle">7</div><div class="step-label">Review</div></div>
+      </div>
+
+      <!-- step 1: basic -->
+      <div class="wizard-page active" data-page="1">
+        <div class="wizard-h">Basic info</div>
+        <div class="wizard-sub">A friendly name and the role this tunnel plays.</div>
+        <div class="form-grid">
+          <div class="field"><label class="field-label">Tunnel name <span class="req">*</span></label><input class="input" id="w-name" placeholder="lowercase, alphanum and -._" /></div>
+          <div class="field"><label class="field-label">Mode</label>
+            <div class="radio-group" style="grid-template-columns:1fr 1fr">
+              <div class="radio-card selected" data-w-mode="client"><div class="name">client</div><div class="desc">Bind a SOCKS5 listener locally, tunnel out</div></div>
+              <div class="radio-card" data-w-mode="server"><div class="name">server</div><div class="desc">Accept QUIC from clients, optionally proxy out</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- step 2: transport -->
+      <div class="wizard-page" data-page="2">
+        <div class="wizard-h">Transport</div>
+        <div class="wizard-sub">How the tunnel travels on the wire. Each has different DPI-evasion properties.</div>
+        <div class="radio-group">
+          <div class="radio-card selected" data-w-transport="udp"><div class="name">udp</div><div class="desc">Default · best throughput · least overhead</div></div>
+          <div class="radio-card" data-w-transport="icmp"><div class="name">icmp</div><div class="desc">For networks that block/deprioritize UDP</div></div>
+          <div class="radio-card" data-w-transport="icmpv6"><div class="name">icmpv6</div><div class="desc">IPv6 proto-58 inside IPv4 · DPI evasion</div></div>
+          <div class="radio-card" data-w-transport="raw"><div class="name">raw</div><div class="desc">Custom IP protocol number · deep stealth</div></div>
+          <div class="radio-card" data-w-transport="syn_udp"><div class="name">syn_udp</div><div class="desc">TCP SYN out / UDP in · asymmetric evasion</div></div>
+        </div>
+        <div class="form-grid" id="transport-extras" style="margin-top:18px"></div>
+      </div>
+
+      <!-- step 3: network -->
+      <div class="wizard-page" data-page="3">
+        <div class="wizard-h">Network</div>
+        <div class="wizard-sub">Listen port (server) or peer address (client).</div>
+        <div class="form-grid" id="network-form"></div>
+        <div class="field" style="margin-top:14px">
+          <div class="field-label">SOCKS5 inbound (client) <span class="text-3">· optional auth</span></div>
+          <div class="form-grid">
+            <div class="field"><input class="input" value="127.0.0.1:1080" /><div class="field-hint">bind address for SOCKS5 listener</div></div>
+            <div class="field">
+              <label class="toggle"><input type="checkbox"/><div class="toggle-track"><div class="toggle-thumb"></div></div><span class="toggle-label">Enable RFC 1929 auth</span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- step 4: crypto -->
+      <div class="wizard-page" data-page="4">
+        <div class="wizard-h">Crypto · X25519 mutual authentication</div>
+        <div class="wizard-sub">Generate or paste keys. Private stays here; public goes to the peer.</div>
+        <div class="form-grid cols-1">
+          <div class="field"><label class="field-label">Your private key <span class="req">*</span></label>
+            <div class="input-with-action"><input class="input" id="w-priv" placeholder="paste base64 or click generate" /><button class="btn" onclick="genIntoFields()">Generate pair</button></div>
+            <div class="field-hint">written 0600 to /etc/quiccochet/keys/&lt;name&gt;.key</div>
+          </div>
+          <div class="field"><label class="field-label">Your public key · share with peer</label>
+            <div class="input-with-action"><input class="input" id="w-pub" placeholder="(auto-derived after generate)" readonly /><button class="btn btn-icon" onclick="copyVal('w-pub')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
+          </div>
+          <div class="field"><label class="field-label">Peer's public key <span class="req">*</span></label>
+            <input class="input" placeholder="get this from the other side's `quiccochet keygen`" />
+          </div>
+        </div>
+      </div>
+
+      <!-- step 5: spoofing -->
+      <div class="wizard-page" data-page="5">
+        <div class="wizard-h">Spoofing</div>
+        <div class="wizard-sub">Forge source IPs both ways. Use RFC 5737 TEST-NET ranges for testing.</div>
+        <div class="form-grid cols-1">
+          <div class="field"><label class="field-label">Your source IPs <span class="req">*</span></label>
+            <div class="chip-list">
+              <input class="chip-input" placeholder="add IP and press enter" onkeydown="addChip(event)" />
+            </div>
+            <div class="field-hint">these go on the wire as src · verify with spoof-tester first</div>
+          </div>
+          <div class="field"><label class="field-label">Peer's expected source IPs <span class="req">*</span></label>
+            <div class="chip-list">
+              <input class="chip-input" placeholder="add IP" onkeydown="addChip(event)" />
+            </div>
+            <div class="field-hint">filter · packets with other src IPs are dropped</div>
+          </div>
+          <div class="form-grid">
+            <div class="field"><label class="field-label">IPv6 source IPs <span class="text-3">(optional)</span></label>
+              <div class="chip-list"><input class="chip-input" placeholder="2a01:4f9:..." /></div>
+            </div>
+            <div class="field"><label class="field-label">IPv6 peer spoof IPs</label>
+              <div class="chip-list"><input class="chip-input" placeholder="2a01:4f9:..." /></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- step 6: advanced -->
+      <div class="wizard-page" data-page="6">
+        <div class="wizard-h">Advanced · all defaults are production-tuned</div>
+        <div class="wizard-sub">Only override if you have a measured reason. Skip if unsure.</div>
+        <div class="config-section">
+          <div class="config-section-header"><div class="config-section-title">Performance <span class="badge-tag">mtu · buffers · pacing</span> <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+          <div class="config-section-body">
+            <div class="form-grid">
+              <div class="field"><label class="field-label">MTU</label><input class="input" value="1400"/><div class="field-hint">min 1231 · enforced</div></div>
+              <div class="field"><label class="field-label">Pacing (Mbps)</label><input class="input" placeholder="0 = off"/><div class="field-hint">SO_MAX_PACING_RATE · needs fq qdisc</div></div>
+              <div class="field"><label class="field-label">Read buffer (B)</label><input class="input" value="33554432"/></div>
+              <div class="field"><label class="field-label">Write buffer (B)</label><input class="input" value="33554432"/></div>
+            </div>
+          </div>
+        </div>
+        <div class="config-section">
+          <div class="config-section-header"><div class="config-section-title">QUIC <span class="badge-tag">pool · windows · congestion</span> <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+          <div class="config-section-body">
+            <div class="form-grid">
+              <div class="field"><label class="field-label">pool_size</label><input class="input" value="8"/></div>
+              <div class="field"><label class="field-label">congestion_control</label><select class="select"><option>auto</option><option>cubic</option><option>bbrv1</option></select></div>
+              <div class="field"><label class="field-label">packet_threshold</label><input class="input" value="128"/></div>
+              <div class="field"><label class="field-label">keep_alive_period_sec</label><input class="input" value="5"/></div>
+              <div class="field"><label class="field-label">max_idle_timeout_sec</label><input class="input" value="10"/></div>
+              <div class="field"><label class="field-label">max_stream_receive_window</label><input class="input" value="33554432"/></div>
+            </div>
+          </div>
+        </div>
+        <div class="config-section">
+          <div class="config-section-header"><div class="config-section-title">Obfuscation <span class="badge-tag">anti-DPI</span> <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+          <div class="config-section-body">
+            <div class="form-grid">
+              <div class="field"><label class="field-label">mode</label><select class="select"><option>none</option><option selected>standard</option><option>paranoid</option></select></div>
+              <div class="field"><label class="field-label">chaffing_interval_ms</label><input class="input" value="50"/><div class="field-hint">paranoid only · min 5</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="config-section collapsed">
+          <div class="config-section-header" onclick="toggleSection(this)"><div class="config-section-title">Security &amp; Outbound proxy <span class="badge-tag">server only</span> <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+          <div class="config-section-body">
+            <div class="form-grid">
+              <div class="field"><label class="toggle"><input type="checkbox" checked/><div class="toggle-track"><div class="toggle-thumb"></div></div><span class="toggle-label">block_private_targets</span></label></div>
+              <div class="field"><label class="toggle"><input type="checkbox"/><div class="toggle-track"><div class="toggle-thumb"></div></div><span class="toggle-label">outbound_proxy enabled</span></label></div>
+              <div class="field"><label class="field-label">proxy address</label><input class="input" placeholder="127.0.0.1:2080"/></div>
+              <div class="field"><label class="field-label">proxy auth</label><input class="input" placeholder="user:pass"/></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- step 7: review -->
+      <div class="wizard-page" data-page="7">
+        <div class="wizard-h">Review</div>
+        <div class="wizard-sub">Generated config preview. Save to apply.</div>
+        <div class="code-block" id="w-preview"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div class="text-3 mono" style="font-size:11px">step <span id="w-step">1</span> / 7</div>
+      <div class="flex gap-2">
+        <button class="btn" id="w-back" onclick="wizardStep(-1)">← back</button>
+        <button class="btn btn-primary" id="w-next" onclick="wizardStep(1)">next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Discovery banner: appears at the top when the server detects
+     unmanaged quiccochet configs (created by the upstream installer,
+     by hand, etc.). Click to open the import modal. -->
+<div id="discovery-banner" style="display:none;position:fixed;top:0;left:240px;right:0;z-index:40;background:linear-gradient(90deg,#ff9d4e,#f5a45c);color:#1a1f26;padding:10px 24px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.3)">
+  <span id="discovery-banner-msg"></span>
+  <button onclick="openDiscoveryModal()" style="margin-left:14px;background:#1a1f26;color:#ff9d4e;border:0;padding:5px 12px;border-radius:4px;cursor:pointer;font-weight:700">Open Import</button>
+  <button onclick="document.getElementById('discovery-banner').style.display='none'" style="float:right;background:transparent;color:#1a1f26;border:0;cursor:pointer;font-size:18px">×</button>
+</div>
+
+<!-- Discovery / import modal -->
+<div class="modal-overlay" id="discover-modal" onclick="if(event.target===this)closeDiscoveryModal()">
+  <div class="modal" style="max-width:900px;width:90%">
+    <div class="modal-header">
+      <div class="modal-title">Discover existing tunnels</div>
+      <button class="btn btn-sm btn-icon" onclick="closeDiscoveryModal()">×</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <p class="text-3 mb-3">Configs found on the server that the panel doesn't currently manage. Select the ones you want to import.</p>
+      <div id="discover-list" class="mt-3">
+        <div class="text-3 center" style="padding:24px 0">scanning...</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeDiscoveryModal()">Cancel</button>
+      <button class="btn btn-primary" id="discover-import-btn" onclick="doImportSelected()" disabled>Import selected</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   Ispof admin panel — frontend
+   --------------------------------------------------------------------
+   This is a thin shell over a REST API. The backend at /api/* owns all
+   state; this file only renders. The SSE stream at /api/stream/state
+   keeps the dashboard in sync without polling.
+
+   Key globals:
+     • state.tunnels       — last snapshot from the server
+     • state.view          — which top-level view is active
+     • state.selectedId    — name of the tunnel currently being viewed
+     • state.draft         — the in-progress wizard tunnel
+   ──────────────────────────────────────────────────────────────────── */
+
+const state = {
+  tunnels: [],
+  events: [],
+  view: 'dashboard',
+  subview: 'overview',
+  selectedId: null,
+  draft: null,           // wizard state
+  wizardStep: 1,
+  sseConnected: false,
+  sse: null,
+  // Per-tunnel client-side state derived from scraped counters. Maintained
+  // by ingestSnapshot() each SSE tick so renderers can read rates and
+  // history without re-computing.
+  rateCache: {},   // {name: {ts, rxBytes, txBytes, drops}}
+  history:   {},   // {name: [{ts, rxRate, txRate, dropRate}, ...] capped at 60}
+};
+
+const WIZARD_MAX = 7;
+const HISTORY_CAP = 60;
+
+// ─────────────────────────── API client ───────────────────────────
+// Every request goes through here so retries, error toasts, and
+// auth-error handling live in one place.
+
+const api = {
+  async _req(method, path, body) {
+    const opts = { method, headers: {} };
+    if (body !== undefined) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+    const r = await fetch(path, opts);
+    // 204 No Content has no body to parse.
+    if (r.status === 204) return null;
+    const text = await r.text();
+    let parsed;
+    try { parsed = text ? JSON.parse(text) : null; } catch { parsed = text; }
+    if (!r.ok) {
+      const msg = (parsed && parsed.error) || `${method} ${path} → ${r.status}`;
+      throw new Error(msg);
+    }
+    return parsed;
+  },
+  list:    ()        => api._req('GET',  '/api/tunnels'),
+  get:     (n)       => api._req('GET',  `/api/tunnels/${encodeURIComponent(n)}`),
+  create:  (t)       => api._req('POST', '/api/tunnels', t),
+  update:  (n, t)    => api._req('PUT',  `/api/tunnels/${encodeURIComponent(n)}`, t),
+  remove:  (n)       => api._req('DELETE', `/api/tunnels/${encodeURIComponent(n)}`),
+  action:  (n, a)    => api._req('POST', `/api/tunnels/${encodeURIComponent(n)}/${a}`),
+  logs:    (n, l=300)=> fetch(`/api/tunnels/${encodeURIComponent(n)}/logs?lines=${l}`).then(r=>r.text()),
+  metrics: (n)       => api._req('GET', `/api/tunnels/${encodeURIComponent(n)}/metrics`),
+  history: (n)       => api._req('GET', `/api/tunnels/${encodeURIComponent(n)}/history`),
+  events:  (n=50)    => api._req('GET', `/api/events?n=${n}`),
+  keygen:  ()        => api._req('POST', '/api/keygen'),
+  version: ()        => api._req('GET',  '/api/version'),
+  system:  ()        => api._req('GET',  '/api/system'),
+  discover: ()       => api._req('GET',  '/api/discover'),
+  importTunnels: (paths, targetNames={}) => api._req('POST', '/api/discover/import', {paths, target_names: targetNames}),
+};
+
+// ─────────────────────────── metric derivation ───────────────────────────
+// The backend scrapes Prometheus counters; we turn cumulative counters
+// into rates here, on the client, because rates only make sense relative
+// to wall-clock time and the client has the better wall clock for what
+// the user is looking at right now.
+
+// extractScraped picks the rx/tx/drop counter values out of a scraped
+// metrics map regardless of label order, since Prometheus exposers may
+// emit labels in different orders across scrapes.
+function extractScraped(metricsMap) {
+  let rxBytes = 0, txBytes = 0, drops = 0, sessions = 0, poolActive = 0, rtt = 0;
+  if (!metricsMap) return { rxBytes, txBytes, drops, sessions, poolActive, rtt, all: {} };
+  for (const [k, v] of Object.entries(metricsMap)) {
+    if (k.startsWith('quiccochet_bytes_total') && k.indexOf('direction="rx"') >= 0) rxBytes = v;
+    else if (k.startsWith('quiccochet_bytes_total') && k.indexOf('direction="tx"') >= 0) txBytes = v;
+    else if (k.startsWith('quiccochet_packets_dropped_total')) drops = v;
+    else if (k.startsWith('quiccochet_active_sessions')) sessions = v;
+    else if (k.startsWith('quiccochet_quic_pool_active')) poolActive = v;
+    else if (k.startsWith('quiccochet_rtt_ms')) rtt = v;
+  }
+  return { rxBytes, txBytes, drops, sessions, poolActive, rtt, all: metricsMap };
+}
+
+// ingestSnapshot is called on every SSE state event AND on every API list
+// response. It computes per-tunnel rates by diffing the latest counter
+// values against the previous ones, then appends to the history buffer
+// the charts read from.
+//
+// It also garbage-collects entries for tunnels that no longer exist —
+// without this, deleting a tunnel leaves its history and rate cache in
+// memory forever, which is a real leak in long-lived browser tabs that
+// see lots of tunnel churn.
+function ingestSnapshot(tunnels) {
+  const nowSec = Date.now() / 1000;
+
+  // Update the sidebar Tunnels badge to the real count. Without this
+  // it shows the original hard-coded value from the HTML template,
+  // which is "0" until the first SSE tick and stays wrong any time
+  // the count drifts. Doing it here keeps it in sync with state.tunnels
+  // on every snapshot, regardless of which view is rendered.
+  const tcEl = document.getElementById('nav-tunnels-count');
+  if (tcEl) tcEl.textContent = tunnels.length;
+
+  // GC: drop history/rateCache entries for tunnels not in the snapshot.
+  const liveNames = new Set(tunnels.map(t => t.name));
+  for (const name of Object.keys(state.history)) {
+    if (!liveNames.has(name)) delete state.history[name];
+  }
+  for (const name of Object.keys(state.rateCache)) {
+    if (!liveNames.has(name)) delete state.rateCache[name];
+  }
+  // If the user is viewing a tunnel that no longer exists, clear the
+  // last-rendered marker so re-entering a freshly-recreated tunnel of
+  // the same name doesn't skip the full render.
+  if (state.lastRenderedDetail && !liveNames.has(state.lastRenderedDetail)) {
+    state.lastRenderedDetail = null;
+  }
+
+  tunnels.forEach(t => {
+    const m = t.scrape && t.scrape.up === 1 ? extractScraped(t.scrape.metrics) : null;
+    if (!m) {
+      // No scrape data yet: leave previous values untouched. We don't
+      // zero them because that would create false "dropped to zero"
+      // visible glitches in the charts.
+      return;
+    }
+    const prev = state.rateCache[t.name];
+    let rxRate = 0, txRate = 0, dropRate = 0;
+    if (prev && prev.ts) {
+      const dt = nowSec - prev.ts;
+      // Counters can reset (process restart). Guard with >= and skip
+      // anomalies that would otherwise show as huge spikes.
+      if (dt > 0 && dt < 60) {
+        rxRate   = Math.max(0, (m.rxBytes - prev.rxBytes) / dt);
+        txRate   = Math.max(0, (m.txBytes - prev.txBytes) / dt);
+        dropRate = Math.max(0, (m.drops   - prev.drops)   / dt);
+      }
+    }
+    state.rateCache[t.name] = { ts: nowSec, rxBytes: m.rxBytes, txBytes: m.txBytes, drops: m.drops };
+
+    if (!state.history[t.name]) state.history[t.name] = [];
+    const hist = state.history[t.name];
+    hist.push({
+      ts: nowSec, rxRate, txRate, dropRate,
+      sessions: m.sessions, poolActive: m.poolActive, rtt: m.rtt,
+      rxBytes: m.rxBytes, txBytes: m.txBytes, drops: m.drops,
+    });
+    while (hist.length > HISTORY_CAP) hist.shift();
+  });
+}
+
+// rateBps formats a bytes-per-second rate. The "B/s" is shown explicitly
+// so a 0 value reads as "0 B/s" not just "0".
+function rateBps(bps) {
+  if (!bps && bps !== 0) return '—';
+  if (bps < 1024) return Math.round(bps) + ' B/s';
+  if (bps < 1024*1024) return (bps/1024).toFixed(1) + ' KiB/s';
+  if (bps < 1024*1024*1024) return (bps/(1024*1024)).toFixed(1) + ' MiB/s';
+  return (bps/(1024*1024*1024)).toFixed(2) + ' GiB/s';
+}
+
+// ─────────────────────────── formatters ───────────────────────────
+
+function fmtBytes(b) {
+  if (b == null) return '—';
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KiB';
+  if (b < 1024*1024*1024) return (b/(1024*1024)).toFixed(1) + ' MiB';
+  return (b/(1024*1024*1024)).toFixed(2) + ' GiB';
+}
+function fmtUptime(sinceUnix) {
+  if (!sinceUnix) return '—';
+  const s = Math.floor(Date.now()/1000 - sinceUnix);
+  if (s < 60) return s + 's';
+  const d = Math.floor(s/86400), h = Math.floor((s%86400)/3600), m = Math.floor((s%3600)/60);
+  if (d) return d + 'd ' + h + 'h';
+  if (h) return h + 'h ' + m + 'm';
+  return m + 'm';
+}
+// Map systemd ActiveState → our UI status vocabulary.
+function statusFrom(state) {
+  if (!state) return 'stopped';
+  switch (state.active_state) {
+    case 'active':       return 'running';
+    case 'activating':   return 'connecting';
+    case 'deactivating': return 'connecting';
+    case 'failed':       return 'error';
+    default:
+      // systemd says inactive — but a quiccochet process matching this
+      // tunnel may exist outside our control (user started it manually
+      // before installing the panel). Show it as running so the user
+      // sees what's really happening.
+      if (state.external_pid && state.external_pid > 0) return 'external';
+      return 'stopped';
+  }
+}
+
+// statusLabel turns the internal status into the chip text. "external"
+// gets its own label because it needs different action affordances
+// (can't `systemctl stop` what we don't manage).
+function statusLabel(s) {
+  if (s === 'external') return 'running (external)';
+  return s;
+}
+
+// ─────────────────────────── toast notifications ───────────────────────────
+
+function toast(kind, text) {
+  const c = document.getElementById('toasts');
+  const icons = {
+    ok:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
+    warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    err:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+  };
+  const t = document.createElement('div');
+  t.className = 'toast ' + kind;
+  t.innerHTML = icons[kind] + '<span>' + text + '</span>';
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .2s'; setTimeout(() => t.remove(), 200); }, 3500);
+}
+
+// ─────────────────────────── SSE: live state ───────────────────────────
+
+function connectSSE() {
+  if (state.sse) state.sse.close();
+  const ev = new EventSource('/api/stream/state');
+  state.sse = ev;
+  ev.addEventListener('open', () => {
+    state.sseConnected = true;
+    updateStatusPill();
+  });
+  ev.addEventListener('error', () => {
+    state.sseConnected = false;
+    updateStatusPill();
+    // EventSource auto-reconnects with backoff — we just reflect status.
+  });
+  ev.addEventListener('state', (e) => {
+    const data = JSON.parse(e.data);
+    state.tunnels = data.tunnels || [];
+    state.events  = data.events  || [];
+    ingestSnapshot(state.tunnels);
+    // Only re-render if the tab is actually visible. Background tabs
+    // get the data into state for when they're focused again, but skip
+    // the DOM work — that's where the CPU bill comes from.
+    if (!document.hidden) renderCurrentView();
+  });
+  ev.addEventListener('log', (e) => {
+    try {
+      const event = JSON.parse(e.data);
+      state.events = [event, ...state.events].slice(0, 50);
+      if (!document.hidden && state.view === 'dashboard') renderDashboard();
+      // Discovery banner: if a discovery event arrives, show it
+      if (event.type === 'discovery') showDiscoveryBanner(event.message);
+    } catch (_) {}
+  });
+}
+
+// ─────────────────────────── discovery UI ───────────────────────────
+
+// showDiscoveryBanner — called when the server emits a "discovery" event.
+function showDiscoveryBanner(msg) {
+  const b = document.getElementById('discovery-banner');
+  const m = document.getElementById('discovery-banner-msg');
+  if (!b || !m) return;
+  m.textContent = msg;
+  b.style.display = 'block';
+}
+
+async function openDiscoveryModal() {
+  document.getElementById('discover-modal').classList.add('open');
+  document.getElementById('discovery-banner').style.display = 'none';
+  const listEl = document.getElementById('discover-list');
+  listEl.innerHTML = `<div class="text-3 center" style="padding:24px 0">scanning filesystem (may take up to 45s)...</div>`;
+  try {
+    const d = await api.discover();
+    const hits = d.hits || [];
+    if (hits.length === 0) {
+      listEl.innerHTML = `<div class="empty"><div class="title">Nothing found</div><div class="desc">No unmanaged quiccochet configs exist on this server (or none match the known directories/heuristics).</div></div>`;
+      return;
+    }
+    listEl.innerHTML = hits.map((h, i) => `
+      <div class="config-section" style="margin-bottom:10px">
+        <div class="config-section-body" style="display:flex;align-items:center;gap:12px">
+          <input type="checkbox" id="disc-${i}" data-path="${escapeAttr(h.path)}" onchange="updateImportBtn()"/>
+          <div style="flex:1">
+            <div><b>${escape(h.name)}</b> <span class="badge badge-tag">${escape(h.mode||'?')}</span> <span class="mono transport-${escape(h.transport||'')}" style="margin-left:4px">${escape(h.transport||'')}</span> ${h.has_key?'<span class="badge running" style="margin-left:6px"><span class="dot"></span>has key</span>':''}</div>
+            <div class="text-3 mono" style="font-size:11px;margin-top:4px">${escape(h.path)}</div>
+            <div class="text-3" style="font-size:10.5px;margin-top:2px">source: <span class="mono">${escape(h.source)}</span> · ${h.size||0} bytes</div>
+          </div>
+          <input class="input" id="disc-name-${i}" value="${escape(h.name)}" placeholder="target name" style="width:160px" data-path="${escapeAttr(h.path)}"/>
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty"><div class="title">Discovery failed</div><div class="desc">${escape(e.message)}</div></div>`;
+  }
+}
+
+function closeDiscoveryModal() {
+  document.getElementById('discover-modal').classList.remove('open');
+}
+
+function updateImportBtn() {
+  const checked = document.querySelectorAll('#discover-list input[type=checkbox]:checked').length;
+  document.getElementById('discover-import-btn').disabled = checked === 0;
+}
+
+async function doImportSelected() {
+  const checked = Array.from(document.querySelectorAll('#discover-list input[type=checkbox]:checked'));
+  if (checked.length === 0) return;
+  const paths = checked.map(c => c.dataset.path);
+  const targetNames = {};
+  checked.forEach(c => {
+    const idx = c.id.split('-')[1];
+    const nameEl = document.getElementById('disc-name-' + idx);
+    if (nameEl && nameEl.value) targetNames[c.dataset.path] = nameEl.value;
+  });
+  try {
+    const r = await api.importTunnels(paths, targetNames);
+    if (r.imported && r.imported.length > 0) {
+      toast('ok', `Imported ${r.imported.length} tunnel(s): ${r.imported.join(', ')}`);
+    }
+    if (r.failed && Object.keys(r.failed).length > 0) {
+      const msgs = Object.entries(r.failed).map(([p, e]) => `${p}: ${e}`).join('; ');
+      toast('err', `Some imports failed: ${msgs}`);
+    }
+    closeDiscoveryModal();
+    const list = await api.list();
+    state.tunnels = list.tunnels || [];
+    renderCurrentView();
+  } catch (e) {
+    toast('err', 'import failed: ' + e.message);
+  }
+}
+
+// Page Visibility integration: when the user switches tabs or minimizes
+// the window, we close the SSE connection entirely. This stops the
+// browser from queuing 2-min worth of state events to replay when the
+// tab comes back, and stops the server from doing work no one will see.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (state.sse) {
+      state.sse.close();
+      state.sse = null;
+      state.sseConnected = false;
+      updateStatusPill();
+    }
+  } else {
+    if (!state.sse) connectSSE();
+    // Re-render once on return so the user sees current data immediately
+    // rather than waiting for the next 5s tick.
+    api.list().then(d => {
+      state.tunnels = d.tunnels || [];
+      ingestSnapshot(state.tunnels);
+      renderCurrentView();
+    }).catch(() => {});
+  }
+});
+
+function updateStatusPill() {
+  const pill = document.querySelector('.status-pill');
+  if (!pill) return;
+  if (state.sseConnected) {
+    pill.className = 'status-pill';
+    pill.innerHTML = '<span class="dot"></span>connected · live updates';
+  } else {
+    pill.className = 'status-pill warn';
+    pill.innerHTML = '<span class="dot"></span>reconnecting...';
+  }
+}
+
+// ─────────────────────────── navigation ───────────────────────────
+
+const TITLES = {
+  dashboard: 'Dashboard', tunnels: 'Tunnels', 'tunnel-detail': 'Tunnel Detail',
+  tools: 'Tools', logs: 'Logs', metrics: 'Metrics', settings: 'Settings', about: 'About',
+};
+
+async function navigate(view, opts) {
+  // If we're LEAVING the tunnel-detail view, forget the "last rendered"
+  // marker so the next time we enter we do the full render again
+  // (otherwise re-entering the same tunnel skips the config-form rebuild
+  // and the user wouldn't see external edits).
+  if (state.view === 'tunnel-detail' && view !== 'tunnel-detail') {
+    state.lastRenderedDetail = null;
+  }
+  // Also stop any live log tail that was running for the previous view
+  if (typeof stopLiveLogTail === 'function') stopLiveLogTail();
+
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const v = document.querySelector(`.view[data-view="${view}"]`);
+  if (v) v.classList.add('active');
+  const navItem = document.querySelector(`.nav-item[data-view="${view}"]`);
+  if (navItem) navItem.classList.add('active');
+  state.view = view;
+  document.getElementById('bc-current').textContent = TITLES[view] || view;
+  window.scrollTo(0, 0);
+
+  if (view === 'tunnel-detail' && opts && opts.id) state.selectedId = opts.id;
+
+  renderCurrentView();
+}
+
+function renderCurrentView() {
+  switch (state.view) {
+    case 'dashboard':     renderDashboard(); break;
+    case 'tunnels':       renderTunnelsList(); break;
+    case 'tunnel-detail': renderTunnelDetail(); break;
+    case 'logs':          renderGlobalLogsView(); break;
+    case 'tools':         renderToolsView(); break;
+    case 'metrics':       renderMetricsView(); break;
+    case 'settings':      renderSettingsView(); break;
+  }
+}
+
+document.querySelectorAll('.nav-item').forEach(n => {
+  n.addEventListener('click', () => navigate(n.dataset.view));
+});
+
+// ─────────────────────────── dashboard ───────────────────────────
+
+function renderDashboard() {
+  const running = state.tunnels.filter(t => statusFrom(t.state) === 'running').length;
+  const total = state.tunnels.length;
+
+  // Aggregate live rates across every tunnel with scraped data.
+  // The history arrays already hold our 5-min sparkline series — we
+  // sum the latest tick across tunnels for the KPI cards.
+  let totalRx = 0, totalTx = 0, totalDropRate = 0, totalPackets = 0, totalSessions = 0;
+  state.tunnels.forEach(t => {
+    const h = state.history[t.name];
+    if (h && h.length > 0) {
+      const last = h[h.length - 1];
+      totalRx       += last.rxRate || 0;
+      totalTx       += last.txRate || 0;
+      totalDropRate += last.dropRate || 0;
+      totalSessions += last.sessions || 0;
+    }
+    const m = t.scrape && t.scrape.up === 1 && t.scrape.metrics;
+    if (m) {
+      for (const [k, v] of Object.entries(m)) {
+        if (k.startsWith('quiccochet_packets_total')) totalPackets += v;
+      }
+    }
+  });
+
+  document.getElementById('kpi-active').textContent = running;
+  document.getElementById('kpi-tput').textContent = rateBps(totalRx + totalTx).replace(/ .*/, '');
+  // Update unit suffix on throughput card
+  const tputCard = document.getElementById('kpi-tput')?.closest('.stat-card');
+  if (tputCard) {
+    const unit = tputCard.querySelector('.value .unit');
+    if (unit) unit.textContent = (rateBps(totalRx + totalTx).split(' ').slice(1).join(' ')) || 'B/s';
+  }
+  // Packet loss as a percentage of total packet rate
+  const totalPktRate = state.tunnels.reduce((s, t) => {
+    const h = state.history[t.name]; if (!h || !h.length) return s;
+    const last = h[h.length - 1]; return s + (last.dropRate || 0);
+  }, 0);
+  document.getElementById('kpi-loss').textContent = totalPktRate > 0 ? totalPktRate.toFixed(1) : '0';
+
+  // FDs / tasks card: total tasks (threads) across running units
+  const totalTasks = state.tunnels.reduce((s, t) => s + ((t.state && t.state.tasks) || 0), 0);
+  document.getElementById('kpi-fds').textContent = totalTasks || (totalSessions ? totalSessions + ' sess' : '0');
+
+  // Update KPI subtitles to honestly reflect counts
+  const cards = document.querySelectorAll('.stat-card');
+  if (cards[0]) {
+    const unit = cards[0].querySelector('.value .unit');
+    if (unit) unit.textContent = '/ ' + total;
+  }
+
+  // ── Throughput chart: real time-series of rx+tx rates aggregated ──
+  const tputSeries = buildAggregateSeries('rxRate', 'txRate');
+  if (tputSeries.length === 0) tputSeries.push(0);
+  chartArea(document.getElementById('chart-tput'), tputSeries, '#ff9d4e');
+
+  // ── Packet loss chart: real time-series of drop rate ──
+  const dropSeries = buildAggregateSeries('dropRate');
+  chartArea(document.getElementById('chart-loss'), dropSeries.length ? dropSeries : [0], '#f55757', 400);
+
+  // ── QUIC pool grid: per-tunnel, show real active conn count ──
+  document.getElementById('pool-grid').innerHTML = state.tunnels.length === 0
+    ? `<div class="text-3 center" style="padding:20px 0">no tunnels yet — <a href="#" onclick="openNewTunnelModal();return false" class="text-accent">create one</a></div>`
+    : state.tunnels.map(t => {
+        const st = statusFrom(t.state);
+        const h = state.history[t.name];
+        const last = h && h.length ? h[h.length-1] : null;
+        const poolMax = t.quic && t.quic.pool_size ? t.quic.pool_size : 8;
+        const poolActive = last ? Math.round(last.poolActive || 0) : 0;
+        const sessions = last ? Math.round(last.sessions || 0) : 0;
+        const rtt = last ? Math.round(last.rtt || 0) : null;
+        const pct = poolMax > 0 ? Math.min(100, (poolActive/poolMax)*100) : 0;
+        return `<div style="margin-bottom:13px">
+          <div class="flex" style="justify-content:space-between;font-size:11.5px;margin-bottom:6px">
+            <span class="mono">${escape(t.name)}</span>
+            <span class="badge ${st}"><span class="dot"></span>${statusLabel(st)}</span>
+          </div>
+          <div class="flex" style="justify-content:space-between;font-size:10.5px;color:var(--text-2);margin-bottom:4px">
+            <span>pool <span class="mono">${poolActive}/${poolMax}</span></span>
+            <span>sess <span class="mono">${sessions}</span></span>
+            <span>rtt <span class="mono">${rtt!=null?rtt+'ms':'—'}</span></span>
+          </div>
+          <div style="height:4px;background:var(--bg-3);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:#ff9d4e;transition:width .4s"></div></div>
+        </div>`;
+      }).join('');
+
+  // ── Spoof IP pool: list real source_ips from configs (no fake "healthy") ──
+  const allSpoofIps = [];
+  state.tunnels.forEach(t => {
+    (t.spoof && t.spoof.source_ips || []).forEach(ip => allSpoofIps.push({ip, tunnel: t.name, mode: t.mode}));
+  });
+  document.getElementById('spoof-grid').innerHTML = allSpoofIps.length === 0
+    ? `<div class="text-3 center" style="padding:20px 0">no spoof IPs configured</div>`
+    : allSpoofIps.slice(0, 10).map(s =>
+        `<div class="flex" style="justify-content:space-between;font-size:11.5px;margin-bottom:8px">
+           <span class="chip ${s.mode==='client'?'healthy':''}"><span class="dot"></span>${escape(s.ip)}</span>
+           <span class="text-3 mono">${escape(s.tunnel)}</span>
+         </div>`).join('');
+
+  // ── Events list: real events from the event log ──
+  document.getElementById('events-list').innerHTML = state.events.length === 0
+    ? `<div class="text-3 center" style="padding:24px 16px">no events yet</div>`
+    : state.events.slice(0, 8).map(e => {
+        const lvl = e.level === 'error' ? 'err' : e.level === 'warn' ? 'warn' : 'info';
+        const t = new Date(e.time).toTimeString().slice(0,8);
+        return `<div style="padding:8px 16px;border-bottom:1px solid var(--border);font-size:11.5px;line-height:1.55">
+          <span class="text-3 mono" style="margin-right:8px">${t}</span>
+          <span class="log-level ${lvl}" style="margin-right:8px">${lvl}</span>
+          <span>${escape(e.message || '')}</span>
+        </div>`;
+      }).join('');
+
+  renderTunnelsTable(document.getElementById('dash-tunnels'), false);
+}
+
+// buildAggregateSeries pulls one metric from each tunnel's history,
+// aligns by index, and sums per index. Used for stacked "all tunnels"
+// charts on the dashboard. Returns an array of length up to HISTORY_CAP.
+function buildAggregateSeries(...metricNames) {
+  const points = [];
+  let maxLen = 0;
+  state.tunnels.forEach(t => {
+    const h = state.history[t.name];
+    if (h) maxLen = Math.max(maxLen, h.length);
+  });
+  for (let i = 0; i < maxLen; i++) {
+    let sum = 0;
+    state.tunnels.forEach(t => {
+      const h = state.history[t.name];
+      if (!h) return;
+      const idx = h.length - maxLen + i;
+      if (idx < 0) return;
+      const pt = h[idx];
+      for (const m of metricNames) sum += (pt[m] || 0);
+    });
+    points.push(sum);
+  }
+  return points;
+}
+
+function chartArea(svg, data, color, w, h) {
+  if (!svg || !data.length) return;
+  w = w || 800; h = h || 200;
+  const max = Math.max(...data, 1) * 1.15;
+  const pts = data.map((v, i) => {
+    const x = (i / Math.max(data.length - 1, 1)) * w;
+    const y = h - (v / max) * h * 0.88 - 12;
+    return x + ',' + y;
+  }).join(' ');
+  const grid = [0.25, 0.5, 0.75].map(p => {
+    const y = h - h * 0.88 * p - 12;
+    return `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="#1f2630" stroke-width="0.5" stroke-dasharray="3,4"/>`;
+  }).join('');
+  const fillPath = `M0,${h-12} L${pts.replace(/ /g,' L')} L${w},${h-12} Z`;
+  svg.innerHTML = `${grid}<path d="${fillPath}" fill="${color}" opacity="0.13"/><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/>`;
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+}
+
+// ─────────────────────────── tunnels list ───────────────────────────
+
+function renderTunnelsList() {
+  renderTunnelsTable(document.getElementById('tunnels-table'), true, getFiltered());
+}
+
+// applyFilters is wired to the search box + dropdowns. It just re-renders;
+// the filter logic lives in getFiltered() so dashboard can use it too if
+// needed later.
+function applyFilters() {
+  if (state.view === 'tunnels') renderTunnelsList();
+}
+
+// getFiltered returns the subset of state.tunnels that matches the
+// search box + filter dropdowns. If no filters are active, returns the
+// full list (no new array allocated).
+function getFiltered() {
+  const sv = document.getElementById('filter-search');
+  const stv = document.getElementById('filter-status');
+  const mv = document.getElementById('filter-mode');
+  const tv = document.getElementById('filter-transport');
+  const search    = sv  ? sv.value.trim().toLowerCase() : '';
+  const status    = stv ? stv.value : '';
+  const mode      = mv  ? mv.value : '';
+  const transport = tv  ? tv.value : '';
+  if (!search && !status && !mode && !transport) return state.tunnels;
+
+  return state.tunnels.filter(t => {
+    if (mode && t.mode !== mode) return false;
+    if (transport && (t.transport.type !== transport)) return false;
+    if (status && statusFrom(t.state) !== status) return false;
+    if (search) {
+      // Match name, server address, source IPs, peer names
+      const hay = [
+        t.name,
+        t.server && (t.server.address + ':' + t.server.port),
+        (t.spoof && t.spoof.source_ips || []).join(' '),
+        (t.spoof && t.spoof.peer_spoof_ips || []).join(' '),
+        (t.peers || []).map(p => p.name + ' ' + (p.peer_spoof_ips || []).join(' ')).join(' '),
+      ].filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+}
+
+function renderTunnelsTable(el, full, tunnelList) {
+  if (!el) return;
+  const tunnels = tunnelList || state.tunnels;
+  if (tunnels.length === 0) {
+    el.innerHTML = `<tbody><tr><td colspan="9"><div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 17V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10"/><circle cx="8" cy="12" r="1"/><circle cx="16" cy="12" r="1"/><path d="M4 17h16"/><path d="M9 21h6"/></svg>
+      <div class="title">No tunnels yet</div>
+      <div class="desc">Create your first tunnel — the wizard walks you through the entire config.</div>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="openNewTunnelModal()">+ New Tunnel</button>
+    </div></td></tr></tbody>`;
+    return;
+  }
+  const headers = full
+    ? `<th style="width:20%">Name</th><th>Mode / Transport</th><th>Endpoint</th><th>Status</th><th>Uptime</th><th class="right">RX</th><th class="right">TX</th><th class="right">Sessions</th><th class="right">Actions</th>`
+    : `<th>Name</th><th>Mode</th><th>Transport</th><th>Status</th><th class="right">RX</th><th class="right">TX</th><th class="right">Uptime</th>`;
+  el.innerHTML = `<thead><tr>${headers}</tr></thead><tbody>${tunnels.map(t => {
+    const st = statusFrom(t.state);
+    const endpoint = t.mode === 'client' && t.server ? `${t.server.address}:${t.server.port}` : `:${t.listen_port || '-'}`;
+    const since = t.state && t.state.since_unix;
+    const h = state.history[t.name] || [];
+    const last = h.length ? h[h.length-1] : null;
+    const rx = last ? rateBps(last.rxRate) : '—';
+    const tx = last ? rateBps(last.txRate) : '—';
+    const sessions = last ? Math.round(last.sessions || 0) : 0;
+    if (!full) {
+      return `<tr class="clickable" onclick="navigate('tunnel-detail',{id:'${escapeAttr(t.name)}'})">
+        <td class="cell-name"><div class="tunnel-icon">${escape(t.name[0]||'?')}</div>${escape(t.name)}</td>
+        <td><span class="badge badge-tag">${escape(t.mode)}</span></td>
+        <td><span class="mono transport-${escape(t.transport.type)}">${escape(t.transport.type)}</span></td>
+        <td><span class="badge ${st}"><span class="dot"></span>${statusLabel(st)}</span></td>
+        <td class="right mono">${rx}</td>
+        <td class="right mono">${tx}</td>
+        <td class="right mono">${fmtUptime(since)}</td>
+      </tr>`;
+    }
+    return `<tr class="clickable" onclick="navigate('tunnel-detail',{id:'${escapeAttr(t.name)}'})">
+      <td class="cell-name"><div class="tunnel-icon">${escape(t.name[0]||'?')}</div>
+        <div><div>${escape(t.name)}</div><div class="text-3 mono" style="font-size:10.5px">${escape(t.name)}</div></div>
+      </td>
+      <td><span class="badge badge-tag">${escape(t.mode)}</span> <span class="mono transport-${escape(t.transport.type)}" style="margin-left:4px">${escape(t.transport.type)}</span></td>
+      <td class="cell-mono">${escape(endpoint)}</td>
+      <td><span class="badge ${st}"><span class="dot"></span>${statusLabel(st)}</span></td>
+      <td class="mono">${fmtUptime(since)}</td>
+      <td class="right mono">${rx}</td>
+      <td class="right mono">${tx}</td>
+      <td class="right mono">${sessions}</td>
+      <td class="right" onclick="event.stopPropagation()">
+        <div class="row-actions">
+          ${st === 'running'
+            ? `<button class="btn btn-sm btn-icon" title="stop" onclick="doAction('stop','${escapeAttr(t.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="6" y="6" width="12" height="12"/></svg></button>`
+            : `<button class="btn btn-sm btn-icon" title="start" onclick="doAction('start','${escapeAttr(t.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>`}
+          <button class="btn btn-sm btn-icon" title="restart" onclick="doAction('restart','${escapeAttr(t.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+          <button class="btn btn-sm btn-icon" title="edit" onclick="navigate('tunnel-detail',{id:'${escapeAttr(t.name)}'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="btn btn-sm btn-icon btn-danger" title="delete" onclick="doDelete('${escapeAttr(t.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('')}</tbody>`;
+}
+
+async function doAction(action, name) {
+  try {
+    await api.action(name, action);
+    toast(action === 'stop' ? 'warn' : 'ok', `${name} → ${action}`);
+    // SSE will refresh in <2s but a faster manual refresh feels snappier.
+    setTimeout(() => api.list().then(d => { state.tunnels = d.tunnels; renderCurrentView(); }), 300);
+  } catch (e) {
+    toast('err', e.message);
+  }
+}
+
+async function doDelete(name) {
+  const t = findTunnel(name);
+  let msg = `Delete tunnel "${name}"?\n\nThis stops the service and removes the panel-managed config file.`;
+  if (t && t._ispof_imported_from) {
+    msg += `\n\nThe original source file this tunnel was imported from will ALSO be deleted:\n  ${t._ispof_imported_from}\n\nWithout this, the next Discover scan would surface it again as 'unmanaged'.`;
+  } else {
+    msg += ' Any private key embedded in it goes with it.';
+  }
+  if (!confirm(msg)) return;
+  try {
+    await api.remove(name);
+    toast('ok', `${name} deleted`);
+    if (state.selectedId === name) navigate('tunnels');
+    api.list().then(d => {
+      state.tunnels = d.tunnels;
+      ingestSnapshot(state.tunnels);
+      renderCurrentView();
+    });
+  } catch (e) {
+    toast('err', e.message);
+  }
+}
+
+// ─────────────────────────── tunnel detail ───────────────────────────
+
+function findTunnel(name) {
+  return state.tunnels.find(t => t.name === name);
+}
+
+function renderTunnelDetail() {
+  const t = findTunnel(state.selectedId);
+  if (!t) {
+    // tunnel might have been deleted while we were viewing — fall back
+    navigate('tunnels');
+    return;
+  }
+  // First-entry detection: when we navigate to a NEW tunnel (or first
+  // time entering detail view), we do the full render including the
+  // static bits (config form, peers list, switching to overview, log
+  // load). On subsequent SSE ticks we only refresh the LIVE bits to
+  // avoid stomping on:
+  //   • user's selected subtab (was bouncing back to Overview)
+  //   • user's in-progress config edits (innerHTML re-render wiped them)
+  //   • log fetch (was hitting journalctl every 5s for nothing)
+  const isFirstRender = state.lastRenderedDetail !== state.selectedId;
+  if (isFirstRender) state.lastRenderedDetail = state.selectedId;
+
+  renderTunnelDetailLive(t);
+  if (isFirstRender) renderTunnelDetailStatic(t);
+}
+
+// Live bits: anything that genuinely changes between SSE ticks. Safe to
+// re-render every 5s because the parts touched here either don't have
+// user input (charts, badges) or the input doesn't exist in them yet.
+function renderTunnelDetailLive(t) {
+  const st = statusFrom(t.state);
+  const since = t.state && t.state.since_unix;
+
+  document.getElementById('detail-header').innerHTML = `
+    <div class="detail-title-block">
+      <div class="detail-icon">${escape(t.name[0] || '?')}</div>
+      <div>
+        <div class="detail-name">${escape(t.name)} <span class="badge ${st}"><span class="dot"></span>${statusLabel(st)}</span></div>
+        <div class="detail-meta">
+          <span><span class="text-3">mode</span> ${escape(t.mode)}</span>
+          <span><span class="text-3">transport</span> <span class="transport-${escape(t.transport.type)}">${escape(t.transport.type)}</span></span>
+          <span><span class="text-3">uptime</span> ${fmtUptime(since)}</span>
+          ${t.mode === 'client' && t.server
+            ? `<span><span class="text-3">server</span> ${escape(t.server.address)}:${t.server.port}</span>`
+            : `<span><span class="text-3">listen</span> :${t.listen_port||'-'}</span>`}
+          ${t.state && t.state.pid ? `<span><span class="text-3">pid</span> ${t.state.pid}</span>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      ${st === 'running'
+        ? `<button class="btn" onclick="doAction('stop','${escapeAttr(t.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="6" y="6" width="12" height="12"/></svg> stop</button>`
+        : `<button class="btn btn-primary" onclick="doAction('start','${escapeAttr(t.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> start</button>`}
+      <button class="btn" onclick="doAction('restart','${escapeAttr(t.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> restart</button>
+      <button class="btn btn-danger" onclick="doDelete('${escapeAttr(t.name)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/></svg> delete</button>
+    </div>`;
+
+  // Peers tab visibility (server mode only)
+  const peersTab = document.getElementById('peers-tab');
+  if (peersTab) {
+    peersTab.style.display = t.mode === 'server' ? 'block' : 'none';
+    if (t.peers) document.getElementById('peers-count').textContent = t.peers.length;
+  }
+
+  // Overview tiles
+  const h = state.history[t.name] || [];
+  const last = h.length ? h[h.length-1] : null;
+  const tiles = [
+    {l: 'Memory (RSS)', v: t.state && t.state.memory_rss ? fmtBytes(t.state.memory_rss) : '—'},
+    {l: 'RX rate',      v: last ? rateBps(last.rxRate) : '—'},
+    {l: 'TX rate',      v: last ? rateBps(last.txRate) : '—'},
+    {l: 'Sessions',     v: last ? Math.round(last.sessions || 0) : '—'},
+    {l: 'QUIC pool',    v: last ? `${Math.round(last.poolActive||0)}/${(t.quic&&t.quic.pool_size)||'—'}` : '—'},
+    {l: 'RTT',          v: last && last.rtt ? Math.round(last.rtt) + ' ms' : '—'},
+    {l: 'Active state', v: (t.state && t.state.active_state) || '—'},
+    {l: 'Uptime',       v: fmtUptime(since)},
+  ];
+  document.getElementById('detail-metrics').innerHTML = tiles.map(x =>
+    `<div class="metric"><div class="label">${x.l}</div><div class="value">${x.v}</div></div>`).join('');
+
+  const detailSeries = h.map(p => (p.rxRate || 0) + (p.txRate || 0));
+  chartArea(document.getElementById('detail-tput'), detailSeries.length ? detailSeries : [0], '#ff9d4e');
+
+  // Metrics tab — refreshed every tick because counters change.
+  renderTunnelMetricsTiles(t);
+}
+
+// Static bits: things that only need re-rendering on navigation (not on
+// every live tick). User-editable forms in particular MUST live here so
+// typed input survives the next state event.
+function renderTunnelDetailStatic(t) {
+  const spoofIps = (t.spoof && t.spoof.source_ips) || [];
+  document.getElementById('detail-spoof').innerHTML = spoofIps.length === 0
+    ? '<div class="text-3 center" style="padding:14px 0">no source IPs configured</div>'
+    : spoofIps.map(ip => `<div class="flex" style="justify-content:space-between;font-size:11.5px;margin-bottom:8px"><span class="chip"><span class="dot"></span>${escape(ip)}</span><span class="text-3 mono">spoof</span></div>`).join('');
+
+  // Connection-flow SVG (config-shape, not state)
+  const peerSpoof = (t.spoof && t.spoof.peer_spoof_ips && t.spoof.peer_spoof_ips[0])
+                  || (t.peers && t.peers[0] && t.peers[0].peer_spoof_ips && t.peers[0].peer_spoof_ips[0])
+                  || '—';
+  const mySpoof = spoofIps[0] || '—';
+  const peerLabel = t.mode === 'client' && t.server ? `${t.server.address}:${t.server.port}` : 'peers[]';
+  document.getElementById('detail-flow').innerHTML = renderFlowSVG(t.mode === 'client' ? 'Client' : 'Server',
+                                                                   t.mode === 'client' ? 'Server' : 'Peer',
+                                                                   mySpoof, peerSpoof, t.transport.type, peerLabel);
+
+  // Configuration form
+  renderConfigForm(t);
+
+  // Peers list
+  if (t.mode === 'server') renderPeersList(t);
+
+  // Logs — fetch once on entry (NOT on every SSE tick — that hammered journalctl)
+  loadTunnelLogs(t.name);
+
+  // Raw JSON editor — populate textarea with the current full config
+  populateRawEditor(t);
+
+  // Reset to overview ONLY on first entry to a new tunnel. After that
+  // the user's tab choice is sacred.
+  switchSub('overview');
+}
+
+// populateRawEditor fills the Raw JSON textarea with the tunnel's full
+// config, stripped of API-only fields (state, scrape — those are wire
+// computed, never persisted to disk).
+function populateRawEditor(t) {
+  const el = document.getElementById('raw-config-text');
+  if (!el) return;
+  const clean = JSON.parse(JSON.stringify(t));
+  delete clean.state;
+  delete clean.scrape;
+  el.value = JSON.stringify(clean, null, 2);
+  const st = document.getElementById('raw-config-status');
+  if (st) st.textContent = '';
+}
+
+// formatRawConfig re-indents the textarea content. Useful after pasting
+// minified JSON from elsewhere.
+function formatRawConfig() {
+  const el = document.getElementById('raw-config-text');
+  const st = document.getElementById('raw-config-status');
+  if (!el) return;
+  try {
+    const parsed = JSON.parse(el.value);
+    el.value = JSON.stringify(parsed, null, 2);
+    if (st) { st.textContent = 'formatted'; st.style.color = 'var(--ok)'; }
+  } catch (e) {
+    if (st) { st.textContent = 'parse error: ' + e.message; st.style.color = 'var(--err)'; }
+  }
+}
+
+// resetRawConfig restores the textarea to the current tunnel state
+// (throws away any unsaved edits).
+function resetRawConfig() {
+  const t = findTunnel(state.selectedId);
+  if (t) populateRawEditor(t);
+}
+
+// saveRawConfig parses the textarea content and PUTs it. The backend
+// is the source of truth for validation — schema errors come back as
+// HTTP 400 with a human-readable error message.
+async function saveRawConfig() {
+  const el = document.getElementById('raw-config-text');
+  const st = document.getElementById('raw-config-status');
+  if (!el) return;
+  let parsed;
+  try {
+    parsed = JSON.parse(el.value);
+  } catch (e) {
+    if (st) { st.textContent = 'invalid JSON: ' + e.message; st.style.color = 'var(--err)'; }
+    toast('err', 'Invalid JSON: ' + e.message);
+    return;
+  }
+  if (!parsed.name) {
+    toast('err', 'config must have a "name" field');
+    return;
+  }
+  if (parsed.name !== state.selectedId) {
+    toast('err', 'changing the "name" field is not supported here (create a new tunnel instead)');
+    return;
+  }
+  try {
+    await api.update(state.selectedId, parsed);
+    if (st) { st.textContent = 'saved at ' + new Date().toLocaleTimeString() + ' · restart tunnel to apply'; st.style.color = 'var(--ok)'; }
+    toast('ok', 'config saved. Restart tunnel for changes to take effect.');
+    state.lastRenderedDetail = null; // force a full re-render so other tabs refresh
+    const list = await api.list();
+    state.tunnels = list.tunnels || [];
+    ingestSnapshot(state.tunnels);
+  } catch (e) {
+    if (st) { st.textContent = 'save failed: ' + e.message; st.style.color = 'var(--err)'; }
+    toast('err', 'Save failed: ' + e.message);
+  }
+}
+
+// renderTunnelMetricsTiles renders the right-side tile grid in the
+// Metrics subview. Split out so the live tick can refresh it without
+// touching the rest of the detail page. Differentiates between the two
+// "no data" cases so the user knows whether to enable metrics or
+// debug the scrape.
+function renderTunnelMetricsTiles(t) {
+  const el = document.getElementById('metrics-tiles');
+  if (!el) return;
+  const metricsEnabled = t.metrics && t.metrics.enabled === true && t.metrics.listen;
+  const m = t.scrape && t.scrape.up === 1 ? t.scrape.metrics : null;
+
+  if (m) {
+    const entries = Object.entries(m).sort();
+    el.innerHTML = entries.map(([k, v]) => {
+      const display = typeof v === 'number' && v > 1000 ? v.toLocaleString() : v;
+      return `<div class="metric"><div class="label mono" style="font-size:10px;word-break:break-all">${escape(k)}</div><div class="value">${display}</div></div>`;
+    }).join('');
+    return;
+  }
+
+  // No metrics — figure out which "why" to show.
+  if (!metricsEnabled) {
+    // Config has metrics disabled or no listen address. Offer to enable.
+    el.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <div class="title">Metrics not enabled for this tunnel</div>
+      <div class="desc">
+        This tunnel's config does not have <span class="mono">metrics.enabled = true</span> with a <span class="mono">metrics.listen</span> address, so quiccochet is not exposing a <span class="mono">/metrics</span> endpoint and the panel has nothing to scrape.
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="enableMetricsForTunnel('${escapeAttr(t.name)}')">Enable metrics now</button>
+    </div>`;
+    return;
+  }
+
+  // Metrics IS configured, but scrape isn't returning data. Could be
+  // tunnel not running, port unreachable, port collision with the
+  // user's old (pre-Ispof) process, etc.
+  const err = t.scrape && t.scrape.error ? t.scrape.error : null;
+  const tunnelRunning = statusFrom(t.state) === 'running';
+  let diagnostic;
+  if (!tunnelRunning) {
+    diagnostic = `The tunnel is not running. Start it to populate metrics.`;
+  } else if (err) {
+    diagnostic = `Scrape error: <span class="mono">${escape(err)}</span>. The panel cannot reach <span class="mono">${escape(t.metrics.listen)}</span> — either the tunnel didn't bind that port (another process may already own it; this is common right after import if an old quiccochet instance is still running), or a firewall is blocking it.`;
+  } else {
+    diagnostic = `Scrape is configured for <span class="mono">${escape(t.metrics.listen)}</span> but no data has arrived yet. The first sample should land within ${ssePulseSecText()}.`;
+  }
+  el.innerHTML = `<div class="empty" style="grid-column:1/-1">
+    <div class="title">No metrics yet</div>
+    <div class="desc">${diagnostic}</div>
+    ${err ? `<button class="btn" style="margin-top:14px" onclick="doAction('restart','${escapeAttr(t.name)}')">Restart tunnel</button>` : ''}
+  </div>`;
+}
+
+function ssePulseSecText() { return '10s'; }
+
+// enableMetricsForTunnel patches the tunnel's config to turn on metrics
+// with an auto-allocated listen port (starting at 9200, finding the
+// first one not already used by another tunnel in the panel). Then it
+// triggers a restart so quiccochet picks up the new endpoint.
+async function enableMetricsForTunnel(name) {
+  const t = findTunnel(name);
+  if (!t) return;
+  try {
+    // Pick a free port (against the panel's own knowledge — we can't
+    // probe the kernel from JS).
+    const used = new Set(state.tunnels.map(x => x.metrics && x.metrics.listen).filter(Boolean));
+    let port = 9200;
+    while (used.has('127.0.0.1:' + port)) port++;
+
+    const patched = JSON.parse(JSON.stringify(t));
+    patched.metrics = { enabled: true, listen: '127.0.0.1:' + port };
+    // Strip API-only fields before PUT
+    delete patched.state; delete patched.scrape;
+
+    await api.update(name, patched);
+    toast('ok', `Metrics enabled on 127.0.0.1:${port}. Restarting tunnel...`);
+    setTimeout(() => doAction('restart', name), 500);
+  } catch (e) {
+    toast('err', 'Could not enable metrics: ' + e.message);
+  }
+}
+
+function renderFlowSVG(myLabel, peerLabel, myIp, peerIp, transport, peerEndpoint) {
+  return `<svg viewBox="0 0 600 130" style="max-width:560px;width:100%">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff9d4e"/></marker>
+      <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5ab1ff"/></marker>
+    </defs>
+    <rect x="20" y="30" width="170" height="70" rx="6" fill="#13181f" stroke="#2a323e"/>
+    <text x="105" y="55" fill="#e8edf2" text-anchor="middle" font-size="12" font-weight="600">${myLabel}</text>
+    <text x="105" y="74" fill="#7d8590" text-anchor="middle" font-size="10" font-family="IBM Plex Mono">real: this host</text>
+    <text x="105" y="89" fill="#ff9d4e" text-anchor="middle" font-size="10" font-family="IBM Plex Mono">spoof: ${escape(myIp)}</text>
+    <rect x="410" y="30" width="170" height="70" rx="6" fill="#13181f" stroke="#2a323e"/>
+    <text x="495" y="55" fill="#e8edf2" text-anchor="middle" font-size="12" font-weight="600">${peerLabel}</text>
+    <text x="495" y="74" fill="#7d8590" text-anchor="middle" font-size="10" font-family="IBM Plex Mono">real: ${escape(peerEndpoint)}</text>
+    <text x="495" y="89" fill="#5ab1ff" text-anchor="middle" font-size="10" font-family="IBM Plex Mono">spoof: ${escape(peerIp)}</text>
+    <line x1="195" y1="55" x2="405" y2="55" stroke="#ff9d4e" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="300" y="48" fill="#ff9d4e" text-anchor="middle" font-size="10" font-family="IBM Plex Mono">${escape(transport)} · spoofed src</text>
+    <line x1="405" y1="78" x2="195" y2="78" stroke="#5ab1ff" stroke-width="1.5" marker-end="url(#arr2)"/>
+    <text x="300" y="97" fill="#5ab1ff" text-anchor="middle" font-size="10" font-family="IBM Plex Mono">${escape(transport)} · spoofed src</text>
+  </svg>`;
+}
+
+// state.logLines holds the currently-displayed log lines for filtering.
+// We keep them in memory (cap 1000) so the filter box can re-render
+// without re-fetching from the server.
+state.logLines = [];
+state.logSSE = null;
+state.logLive = false;
+
+async function loadTunnelLogs(name) {
+  const viewer = document.getElementById('detail-logs');
+  if (!viewer || !name) return;
+  stopLiveLogTail();
+  viewer.innerHTML = '<div class="log-line"><span class="log-msg text-3">loading logs from journalctl...</span></div>';
+  try {
+    const text = await api.logs(name, 500);
+    if (!text || text.trim() === '') {
+      viewer.innerHTML = '<div class="empty"><div class="title">No logs yet</div><div class="desc">This tunnel has not been started, or journalctl has no entries for it.</div></div>';
+      state.logLines = [];
+      return;
+    }
+    state.logLines = text.split('\n').filter(Boolean);
+    renderLogLines();
+  } catch (e) {
+    viewer.innerHTML = `<div class="empty"><div class="title">Could not load logs</div><div class="desc">${escape(e.message)}</div></div>`;
+  }
+}
+
+// renderLogLines re-renders the viewer from state.logLines applying the
+// in-page filter (text + level). Called on every keystroke in the
+// filter box and when new live-tail lines arrive.
+function renderLogLines() {
+  const viewer = document.getElementById('detail-logs');
+  if (!viewer) return;
+  const filterText = (document.getElementById('log-filter') || {}).value || '';
+  const filterLevel = (document.getElementById('log-level-filter') || {}).value || '';
+  const ft = filterText.toLowerCase();
+
+  const matched = state.logLines.filter(line => {
+    if (ft && !line.toLowerCase().includes(ft)) return false;
+    if (filterLevel) {
+      const lvl = detectLevel(line);
+      if (lvl !== filterLevel) return false;
+    }
+    return true;
+  });
+
+  if (matched.length === 0) {
+    viewer.innerHTML = '<div class="empty"><div class="title">No matching lines</div></div>';
+    return;
+  }
+  viewer.innerHTML = matched.map(line => {
+    const lvl = detectLevel(line);
+    return `<div class="log-line lvl-${lvl}"><span class="log-msg">${escape(line)}</span></div>`;
+  }).join('');
+  // Auto-scroll to bottom when in live-tail mode
+  if (state.logLive) viewer.scrollTop = viewer.scrollHeight;
+}
+
+function detectLevel(line) {
+  if (/\berror\b|\bERR\b/i.test(line)) return 'err';
+  if (/\bwarn\b|WARN/i.test(line))    return 'warn';
+  if (/\bdebug\b|DBG/i.test(line))    return 'dbg';
+  return 'info';
+}
+
+function toggleLiveLogTail() {
+  if (state.logLive) stopLiveLogTail();
+  else startLiveLogTail();
+}
+
+function startLiveLogTail() {
+  const name = state.selectedId;
+  if (!name) return;
+  stopLiveLogTail();
+  state.logLive = true;
+  document.getElementById('log-live-label').textContent = 'tailing... (click to stop)';
+  document.getElementById('log-live-btn').classList.add('btn-primary');
+
+  // SSE stream of journalctl -f from the backend. Each line event
+  // appends to state.logLines and re-renders.
+  const ev = new EventSource('/api/tunnels/' + encodeURIComponent(name) + '/stream/logs');
+  state.logSSE = ev;
+  ev.addEventListener('line', (e) => {
+    // SSE escape replaces \n with space — undo not needed, the line is
+    // already one logical line.
+    state.logLines.push(e.data);
+    if (state.logLines.length > 1000) state.logLines.shift();
+    renderLogLines();
+  });
+  ev.addEventListener('error', () => {
+    // EventSource will auto-reconnect; just reflect status briefly.
+  });
+}
+
+function stopLiveLogTail() {
+  if (state.logSSE) {
+    state.logSSE.close();
+    state.logSSE = null;
+  }
+  state.logLive = false;
+  const lbl = document.getElementById('log-live-label');
+  if (lbl) lbl.textContent = 'live tail';
+  const btn = document.getElementById('log-live-btn');
+  if (btn) btn.classList.remove('btn-primary');
+}
+
+function exportLogs() {
+  if (state.logLines.length === 0) {
+    toast('warn', 'no logs to export');
+    return;
+  }
+  const blob = new Blob([state.logLines.join('\n')], {type: 'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (state.selectedId || 'tunnel') + '-logs.txt';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ─────────────────────────── config form ───────────────────────────
+
+// Build the per-tunnel editable config form. Form state is held in DOM;
+// when the user clicks save we serialize back to a Tunnel object and
+// PUT it to the API.
+function renderConfigForm(t) {
+  const sections = [
+    {title: 'Basic', body: confBasic(t)},
+    {title: 'Network', body: confNetwork(t)},
+    {title: 'Spoofing', body: confSpoof(t)},
+    {title: 'Crypto · X25519', body: confCrypto(t)},
+    {title: 'Performance', body: confPerf(t)},
+    {title: 'QUIC', body: confQUIC(t)},
+    {title: 'Obfuscation', body: confObf(t)},
+    {title: 'Security', body: confSec(t)},
+    {title: 'Observability', body: confObs(t)},
+  ];
+  document.getElementById('config-form').innerHTML =
+    sections.map(s => `
+      <div class="config-section">
+        <div class="config-section-header" onclick="toggleSection(this)">
+          <div class="config-section-title">${s.title}<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+        <div class="config-section-body">${s.body}</div>
+      </div>`).join('') +
+    `<div class="flex gap-2" style="margin-top:18px;justify-content:flex-end">
+       <button class="btn" onclick="renderTunnelDetail()">Cancel</button>
+       <button class="btn btn-primary" onclick="saveConfig()">Save changes</button>
+     </div>`;
+}
+
+// Each conf* helper returns HTML for one section. The IDs use a c-<name>
+// prefix so saveConfig() knows where to read each value from.
+function confBasic(t){return `<div class="form-grid">
+  <div class="field"><label class="field-label">Name <span class="text-3">(read-only)</span></label><input class="input" value="${escapeAttr(t.name)}" disabled/></div>
+  <div class="field"><label class="field-label">Mode</label><select class="select" id="c-mode">${['client','server'].map(x=>`<option ${t.mode===x?'selected':''}>${x}</option>`).join('')}</select></div>
+  <div class="field"><label class="field-label">Transport</label><select class="select" id="c-transport">${['udp','icmp','icmpv6','raw','syn_udp'].map(x=>`<option ${t.transport.type===x?'selected':''}>${x}</option>`).join('')}</select></div>
+  ${t.transport.type==='icmp'||t.transport.type==='icmpv6'?`<div class="field"><label class="field-label">icmp_mode</label><select class="select" id="c-icmp"><option ${t.transport.icmp_mode==='echo'?'selected':''}>echo</option><option ${t.transport.icmp_mode==='reply'?'selected':''}>reply</option></select></div>`:''}
+  ${t.transport.type==='raw'?`<div class="field"><label class="field-label">protocol_number</label><input class="input" id="c-protonum" value="${t.transport.protocol_number||253}"/></div>`:''}
+</div>`;}
+
+function confNetwork(t){return t.mode==='client'?`<div class="form-grid">
+  <div class="field"><label class="field-label">Server address</label><input class="input" id="c-srv-addr" value="${escapeAttr((t.server&&t.server.address)||'')}"/></div>
+  <div class="field"><label class="field-label">Server port</label><input class="input" id="c-srv-port" value="${(t.server&&t.server.port)||8080}"/></div>
+  <div class="field"><label class="field-label">Local listen_port</label><input class="input" id="c-listen-port" value="${t.listen_port||0}"/></div>
+</div>`:`<div class="form-grid">
+  <div class="field"><label class="field-label">listen_port</label><input class="input" id="c-listen-port" value="${t.listen_port||8080}"/></div>
+</div>`;}
+
+function confSpoof(t){
+  const list = (arr) => (arr||[]).map(ip=>`<span class="chip healthy"><span class="dot"></span>${escape(ip)}<span class="remove" onclick="this.parentElement.remove()">×</span></span>`).join('');
+  return `<div class="form-grid cols-1">
+    <div class="field"><label class="field-label">source_ips</label><div class="chip-list" id="c-source-ips">${list(t.spoof&&t.spoof.source_ips)}<input class="chip-input" placeholder="add IP and enter" onkeydown="addChip(event)"/></div></div>
+    ${t.mode==='client'?`<div class="field"><label class="field-label">peer_spoof_ips · expected from server</label><div class="chip-list" id="c-peer-spoof-ips">${list(t.spoof&&t.spoof.peer_spoof_ips)}<input class="chip-input" placeholder="add IP" onkeydown="addChip(event)"/></div></div>`:''}
+    <div class="field"><label class="field-label">source_ipv6s <span class="text-3">(optional)</span></label><div class="chip-list" id="c-source-ipv6s">${list(t.spoof&&t.spoof.source_ipv6s)}<input class="chip-input" placeholder="2a01:..." onkeydown="addChip(event)"/></div></div>
+  </div>`;
+}
+
+function confCrypto(t){return `<div class="form-grid cols-1">
+  <div class="field"><label class="field-label">private_key <span class="text-3">(X25519, base64)</span></label><input class="input mono" id="c-priv" value="${escapeAttr(t.crypto&&t.crypto.private_key||'')}" placeholder="(empty — Generate in Tools tab)"/></div>
+  ${t.mode==='client'?`<div class="field"><label class="field-label">peer_public_key</label><input class="input" id="c-peer-pub" value="${escapeAttr(t.crypto&&t.crypto.peer_public_key||'')}" placeholder="base64 from peer's keygen"/></div>`:''}
+</div>`;}
+
+function confPerf(t){const p=t.performance||{};return `<div class="form-grid">
+  <div class="field"><label class="field-label">mtu</label><input class="input" id="c-mtu" value="${p.mtu||1400}"/></div>
+  <div class="field"><label class="field-label">pacing_rate_mbps</label><input class="input" id="c-pacing" value="${p.pacing_rate_mbps||0}"/></div>
+  <div class="field"><label class="field-label">read_buffer</label><input class="input" id="c-rbuf" value="${p.read_buffer||33554432}"/></div>
+  <div class="field"><label class="field-label">write_buffer</label><input class="input" id="c-wbuf" value="${p.write_buffer||33554432}"/></div>
+</div>`;}
+
+function confQUIC(t){const q=t.quic||{};return `<div class="form-grid cols-3">
+  <div class="field"><label class="field-label">pool_size</label><input class="input" id="c-pool" value="${q.pool_size||8}"/></div>
+  <div class="field"><label class="field-label">congestion_control</label><select class="select" id="c-cc"><option ${q.congestion_control==='auto'||!q.congestion_control?'selected':''}>auto</option><option ${q.congestion_control==='cubic'?'selected':''}>cubic</option><option ${q.congestion_control==='bbrv1'?'selected':''}>bbrv1</option></select></div>
+  <div class="field"><label class="field-label">packet_threshold</label><input class="input" id="c-thresh" value="${q.packet_threshold||128}"/></div>
+  <div class="field"><label class="field-label">keep_alive_period_sec</label><input class="input" id="c-keepalive" value="${q.keep_alive_period_sec||5}"/></div>
+  <div class="field"><label class="field-label">max_idle_timeout_sec</label><input class="input" id="c-idle" value="${q.max_idle_timeout_sec||10}"/></div>
+  <div class="field"><label class="field-label">max_stream_receive_window</label><input class="input" id="c-strw" value="${q.max_stream_receive_window||33554432}"/></div>
+</div>`;}
+
+function confObf(t){const o=t.obfuscation||{};return `<div class="form-grid">
+  <div class="field"><label class="field-label">mode</label><select class="select" id="c-obf"><option ${o.mode==='none'?'selected':''}>none</option><option ${o.mode==='standard'||!o.mode?'selected':''}>standard</option><option ${o.mode==='paranoid'?'selected':''}>paranoid</option></select></div>
+  <div class="field"><label class="field-label">chaffing_interval_ms</label><input class="input" id="c-chaff" value="${o.chaffing_interval_ms||50}"/></div>
+</div>`;}
+
+function confSec(t){const s=t.security||{};return `<div class="form-grid">
+  <div class="field"><label class="toggle"><input type="checkbox" id="c-block-priv" ${s.block_private_targets?'checked':''}/><div class="toggle-track"><div class="toggle-thumb"></div></div><span class="toggle-label">block_private_targets</span></label></div>
+</div>`;}
+
+function confObs(t){const l=t.logging||{},a=t.admin||{},m=t.metrics||{};return `<div class="form-grid">
+  <div class="field"><label class="field-label">log level</label><select class="select" id="c-loglevel"><option ${l.level==='debug'?'selected':''}>debug</option><option ${l.level==='info'||!l.level?'selected':''}>info</option><option ${l.level==='warn'?'selected':''}>warn</option><option ${l.level==='error'?'selected':''}>error</option></select></div>
+  <div class="field"><label class="field-label">admin socket</label><input class="input" id="c-admin-sock" value="${escapeAttr(a.socket||'')}" placeholder="/run/quiccochet-${escapeAttr(t.name)}.sock"/></div>
+  <div class="field"><label class="field-label">metrics listen</label><input class="input" id="c-met-listen" value="${escapeAttr(m.listen||'')}" placeholder="127.0.0.1:9200"/></div>
+</div>`;}
+
+function chipsFrom(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return [];
+  return Array.from(el.querySelectorAll('.chip')).map(c => c.firstChild.nextSibling ? c.childNodes[1].textContent.trim() : c.textContent.trim()).filter(Boolean);
+}
+
+function addChip(ev) {
+  if (ev.key !== 'Enter') return;
+  ev.preventDefault();
+  const inp = ev.target;
+  const v = inp.value.trim();
+  if (!v) return;
+  const chip = document.createElement('span');
+  chip.className = 'chip healthy';
+  chip.innerHTML = `<span class="dot"></span>${escape(v)}<span class="remove" onclick="this.parentElement.remove()">×</span>`;
+  inp.parentElement.insertBefore(chip, inp);
+  inp.value = '';
+}
+
+async function saveConfig() {
+  const cur = findTunnel(state.selectedId);
+  if (!cur) return;
+  // Build the updated Tunnel object from form fields
+  const t = JSON.parse(JSON.stringify(cur)); // deep clone
+  delete t.state;
+  t.mode = document.getElementById('c-mode').value;
+  t.transport = {type: document.getElementById('c-transport').value};
+  const icmpEl = document.getElementById('c-icmp'); if (icmpEl) t.transport.icmp_mode = icmpEl.value;
+  const protoEl = document.getElementById('c-protonum'); if (protoEl) t.transport.protocol_number = parseInt(protoEl.value,10);
+
+  if (t.mode === 'client') {
+    t.server = {
+      address: document.getElementById('c-srv-addr').value,
+      port: parseInt(document.getElementById('c-srv-port').value, 10),
+    };
+  }
+  const lp = document.getElementById('c-listen-port');
+  if (lp) t.listen_port = parseInt(lp.value, 10) || 0;
+
+  t.spoof = {
+    source_ips: chipsFrom('c-source-ips'),
+    source_ipv6s: chipsFrom('c-source-ipv6s'),
+    peer_spoof_ips: chipsFrom('c-peer-spoof-ips'),
+  };
+  t.crypto = {
+    private_key: document.getElementById('c-priv').value,
+    peer_public_key: (document.getElementById('c-peer-pub') || {}).value || '',
+  };
+  t.performance = {
+    mtu: parseInt(document.getElementById('c-mtu').value,10),
+    pacing_rate_mbps: parseInt(document.getElementById('c-pacing').value,10),
+    read_buffer: parseInt(document.getElementById('c-rbuf').value,10),
+    write_buffer: parseInt(document.getElementById('c-wbuf').value,10),
+  };
+  t.quic = {
+    pool_size: parseInt(document.getElementById('c-pool').value,10),
+    congestion_control: document.getElementById('c-cc').value,
+    packet_threshold: parseInt(document.getElementById('c-thresh').value,10),
+    keep_alive_period_sec: parseInt(document.getElementById('c-keepalive').value,10),
+    max_idle_timeout_sec: parseInt(document.getElementById('c-idle').value,10),
+    max_stream_receive_window: parseInt(document.getElementById('c-strw').value,10),
+  };
+  t.obfuscation = {
+    mode: document.getElementById('c-obf').value,
+    chaffing_interval_ms: parseInt(document.getElementById('c-chaff').value,10),
+  };
+  t.security = {
+    block_private_targets: document.getElementById('c-block-priv').checked,
+  };
+  t.logging = { level: document.getElementById('c-loglevel').value };
+  t.admin = { enabled: true, socket: document.getElementById('c-admin-sock').value };
+  t.metrics = { enabled: true, listen: document.getElementById('c-met-listen').value };
+
+  try {
+    await api.update(t.name, t);
+    toast('ok', `${t.name} saved · restart to apply`);
+    // Re-fetch fresh state
+    const data = await api.list();
+    state.tunnels = data.tunnels;
+    renderTunnelDetail();
+  } catch (e) {
+    toast('err', e.message);
+  }
+}
+
+function renderPeersList(t) {
+  const el = document.getElementById('peers-list');
+  if (!el) return;
+  const peers = t.peers || [];
+  el.innerHTML = `<div class="flex" style="justify-content:space-between;margin-bottom:14px"><div class="text-3">${peers.length} peers configured · spoof IPs must be disjoint</div><button class="btn btn-primary btn-sm" onclick="addPeer('${escapeAttr(t.name)}')">+ Add peer</button></div>` +
+    (peers.length === 0
+      ? `<div class="empty"><div class="title">No peers yet</div><div class="desc">Add at least one peer for clients to connect.</div></div>`
+      : peers.map((p, i) => `
+        <div class="peer-card">
+          <div class="peer-card-header">
+            <div class="peer-name">${escape(p.name)}</div>
+            <button class="btn btn-sm btn-icon btn-danger" title="remove peer" onclick="removePeer('${escapeAttr(t.name)}', ${i})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </div>
+          <div class="peer-stats">
+            <div><div class="lbl">real IP</div><div>${escape(p.client_real_ip||'—')}</div></div>
+            <div><div class="lbl">spoof IPs</div><div>${(p.peer_spoof_ips||[]).join(', ')||'—'}</div></div>
+          </div>
+          <div class="mono text-3" style="font-size:10.5px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">pubkey · ${escape(p.peer_public_key||'')}</div>
+        </div>`).join(''));
+}
+
+// addPeer prompts for the bare minimum peer fields and PUTs the updated
+// tunnel config back. Keeps a sensible default for the spoof IP since
+// quiccochet requires it to be set; the user can edit further in the
+// Config tab if they need more peer fields (real_ipv6, source_ips, ...).
+async function addPeer(tunnelName) {
+  const t = findTunnel(tunnelName);
+  if (!t) return;
+  const name = prompt('Peer name (used in logs):');
+  if (!name) return;
+  const pubKey = prompt('Peer public key (X25519, base64):');
+  if (!pubKey) return;
+  const realIP = prompt('Peer real IP (the IP the server will send replies TO):');
+  if (!realIP) return;
+  const spoofIPs = prompt('Peer spoof IPs (comma-separated — what the server expects to SEE from this peer):');
+  if (!spoofIPs) return;
+
+  const patched = JSON.parse(JSON.stringify(t));
+  patched.peers = patched.peers || [];
+  patched.peers.push({
+    name: name,
+    peer_public_key: pubKey,
+    client_real_ip: realIP,
+    peer_spoof_ips: spoofIPs.split(',').map(s => s.trim()).filter(Boolean),
+  });
+  delete patched.state;
+  delete patched.scrape;
+  try {
+    await api.update(tunnelName, patched);
+    toast('ok', `Peer "${name}" added. Restart the tunnel for changes to take effect.`);
+    // Force full re-render so the new peer shows up
+    state.lastRenderedDetail = null;
+    const list = await api.list();
+    state.tunnels = list.tunnels || [];
+    renderCurrentView();
+  } catch (e) {
+    toast('err', 'Could not add peer: ' + e.message);
+  }
+}
+
+async function removePeer(tunnelName, index) {
+  if (!confirm(`Remove peer at index ${index}?`)) return;
+  const t = findTunnel(tunnelName);
+  if (!t || !t.peers || !t.peers[index]) return;
+  const patched = JSON.parse(JSON.stringify(t));
+  patched.peers.splice(index, 1);
+  delete patched.state;
+  delete patched.scrape;
+  try {
+    await api.update(tunnelName, patched);
+    toast('ok', 'Peer removed. Restart the tunnel for changes to take effect.');
+    state.lastRenderedDetail = null;
+    const list = await api.list();
+    state.tunnels = list.tunnels || [];
+    renderCurrentView();
+  } catch (e) {
+    toast('err', 'Could not remove peer: ' + e.message);
+  }
+}
+
+// ─────────────────────────── subtabs ───────────────────────────
+
+document.querySelectorAll('.subtab[data-sub]').forEach(s => {
+  s.addEventListener('click', () => switchSub(s.dataset.sub));
+});
+function switchSub(name) {
+  state.subview = name;
+  document.querySelectorAll('.subtab[data-sub]').forEach(s => s.classList.toggle('active', s.dataset.sub === name));
+  document.querySelectorAll('.subview[data-sub]').forEach(v => v.classList.toggle('active', v.dataset.sub === name));
+}
+
+document.querySelectorAll('.subtab[data-tool]').forEach(s => {
+  s.addEventListener('click', () => {
+    document.querySelectorAll('.subtab[data-tool]').forEach(x => x.classList.toggle('active', x === s));
+    document.querySelectorAll('.subview[data-tool]').forEach(v => v.classList.toggle('active', v.dataset.tool === s.dataset.tool));
+  });
+});
+
+function toggleSection(header) {
+  header.parentElement.classList.toggle('collapsed');
+}
+
+// ─────────────────────────── logs view (global) ───────────────────────────
+
+// renderGlobalLogsView shows the in-memory event log (lifecycle +
+// state-change events) with full filter support. The events come from
+// state.events which is populated by the SSE state stream.
+//
+// Why event log and not aggregated journalctl?
+//   • Journalctl per-tunnel is reachable via the tunnel detail Logs tab,
+//     which is the right granularity for "what is THIS tunnel doing".
+//   • The global view is more useful as a high-level audit trail: who
+//     created/started/stopped/imported what and when. That's exactly the
+//     event log.
+//   • Fetching journalctl across N tunnels per render was O(N) shell-outs
+//     hammering the system for limited value.
+async function renderGlobalLogsView() {
+  // Populate the tunnel-name filter dropdown.
+  const tunnelSel = document.getElementById('global-logs-tunnel');
+  if (tunnelSel) {
+    const current = tunnelSel.value;
+    tunnelSel.innerHTML = '<option value="">all tunnels</option>' +
+      state.tunnels.map(t => `<option value="${escapeAttr(t.name)}" ${current === t.name ? 'selected' : ''}>${escape(t.name)}</option>`).join('');
+  }
+
+  const viewer = document.getElementById('global-logs');
+  if (!viewer) return;
+
+  // Pull the full recent event window from the API rather than relying
+  // on what happened to be in state.events at the time of the last SSE
+  // push — gives us a wider audit trail.
+  let events = state.events || [];
+  try {
+    const data = await api.events(200);
+    if (data && data.events) events = data.events;
+  } catch (_) { /* keep state.events */ }
+
+  // Filter
+  const search = ((document.getElementById('global-logs-search') || {}).value || '').toLowerCase();
+  const tunnelFilter = (tunnelSel || {}).value || '';
+  const levelFilter = ((document.getElementById('global-logs-level') || {}).value || '');
+  const typeFilter = ((document.getElementById('global-logs-type') || {}).value || '');
+
+  const filtered = events.filter(e => {
+    if (tunnelFilter && e.tunnel !== tunnelFilter) return false;
+    if (levelFilter && e.level !== levelFilter) return false;
+    if (typeFilter && e.type !== typeFilter) return false;
+    if (search) {
+      const hay = (e.tunnel + ' ' + e.message + ' ' + e.type).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    if (events.length === 0) {
+      viewer.innerHTML = '<div class="empty"><div class="title">No events yet</div><div class="desc">Lifecycle and state-change events will appear here as you create, start, stop, restart, and edit tunnels. For per-tunnel <span class="mono">journalctl</span> output use the Logs tab inside a tunnel.</div></div>';
+    } else {
+      viewer.innerHTML = '<div class="empty"><div class="title">No matching events</div><div class="desc">' + events.length + ' events in the buffer; none match the current filters.</div></div>';
+    }
+    return;
+  }
+
+  viewer.innerHTML = filtered.map(e => {
+    const lvl = e.level === 'error' ? 'err' : e.level === 'warn' ? 'warn' : 'info';
+    const time = e.time ? new Date(e.time).toLocaleTimeString() : '';
+    return `<div class="log-line lvl-${lvl}">
+      <span class="text-3 mono" style="margin-right:8px;font-size:11px">${escape(time)}</span>
+      <span class="log-level ${lvl}" style="margin-right:8px">${e.level}</span>
+      ${e.tunnel ? `<span class="log-comp">${escape(e.tunnel)}</span>` : ''}
+      <span class="log-msg">${escape(e.message || '')}</span>
+    </div>`;
+  }).join('');
+}
+
+// exportGlobalLogs downloads the current filtered event view as plain text.
+function exportGlobalLogs() {
+  const viewer = document.getElementById('global-logs');
+  if (!viewer) return;
+  const lines = Array.from(viewer.querySelectorAll('.log-line')).map(l => l.innerText.replace(/\s+/g, ' '));
+  if (lines.length === 0) { toast('warn', 'no events to export'); return; }
+  const blob = new Blob([lines.join('\n')], {type: 'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ispof-events-' + new Date().toISOString().replace(/[:.]/g, '-') + '.txt';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ─────────────────────────── metrics view ───────────────────────────
+
+function renderMetricsView() {
+  // Real Prometheus aggregate: per-tunnel rates + counter values from scraper.
+  const ok = state.tunnels.filter(t => t.scrape && t.scrape.up === 1).length;
+  let totalRx = 0, totalTx = 0, totalBytesIn = 0, totalBytesOut = 0;
+  state.tunnels.forEach(t => {
+    const h = state.history[t.name] || [];
+    if (h.length) {
+      const last = h[h.length-1];
+      totalRx += last.rxRate || 0;
+      totalTx += last.txRate || 0;
+      totalBytesIn  += last.rxBytes || 0;
+      totalBytesOut += last.txBytes || 0;
+    }
+  });
+
+  const up = document.getElementById('met-up');
+  if (up) up.innerHTML = `${ok}<span class="unit">/ ${state.tunnels.length}</span>`;
+  const tput = document.getElementById('met-tput');
+  if (tput) tput.textContent = rateBps(totalRx + totalTx);
+  const bi = document.getElementById('met-bytes-in');
+  if (bi) bi.textContent = fmtBytes(totalBytesIn);
+  const bo = document.getElementById('met-bytes-out');
+  if (bo) bo.textContent = fmtBytes(totalBytesOut);
+
+  // Prometheus scrape config: emit a real prometheus.yml fragment based
+  // on tunnels that actually have metrics enabled.
+  const prom = document.getElementById('prom-config');
+  if (prom) {
+    const enabled = state.tunnels.filter(t => t.metrics && t.metrics.enabled && t.metrics.listen);
+    if (enabled.length === 0) {
+      prom.innerHTML = '<span class="text-3">no tunnels with metrics enabled yet</span>';
+    } else {
+      const targets = enabled.map(t =>
+        `        - <span class="str">${escape(t.metrics.listen)}</span>    <span class="punct"># ${escape(t.name)}</span>`
+      ).join('\n');
+      prom.innerHTML = `<span class="punct">- </span><span class="key">job_name</span><span class="punct">:</span> <span class="str">quiccochet</span>
+  <span class="key">scrape_interval</span><span class="punct">:</span> <span class="str">15s</span>
+  <span class="key">static_configs</span><span class="punct">:</span>
+    <span class="punct">- </span><span class="key">targets</span><span class="punct">:</span>
+${targets}`;
+    }
+  }
+
+  const el = document.getElementById('peer-metrics');
+  if (!el) return;
+  if (state.tunnels.length === 0) {
+    el.innerHTML = `<tbody><tr><td><div class="empty"><div class="title">No tunnels</div></div></td></tr></tbody>`;
+    return;
+  }
+  el.innerHTML = `<thead><tr>
+      <th>name</th><th>scrape</th><th class="right">rx</th><th class="right">tx</th>
+      <th class="right">drops</th><th class="right">sessions</th><th class="right">pool</th><th class="right">rtt</th>
+    </tr></thead>
+    <tbody>${state.tunnels.map(t => {
+      const h = state.history[t.name] || [];
+      const last = h.length ? h[h.length-1] : null;
+      const m = t.scrape;
+      const scrapeStatus = m && m.up === 1
+        ? `<span class="badge running"><span class="dot"></span>ok</span>`
+        : `<span class="badge stopped" title="${m && m.error ? escape(m.error) : ''}"><span class="dot"></span>${m && m.error ? escape(m.error).slice(0,30) : 'no data'}</span>`;
+      return `<tr>
+        <td class="cell-name"><div class="tunnel-icon">${escape(t.name[0]||'?')}</div>${escape(t.name)}</td>
+        <td>${scrapeStatus}</td>
+        <td class="right mono">${last ? rateBps(last.rxRate) : '—'}</td>
+        <td class="right mono">${last ? rateBps(last.txRate) : '—'}</td>
+        <td class="right mono">${last && last.dropRate > 0 ? last.dropRate.toFixed(2) + '/s' : '0'}</td>
+        <td class="right mono">${last ? Math.round(last.sessions||0) : '—'}</td>
+        <td class="right mono">${last ? Math.round(last.poolActive||0) + '/' + ((t.quic&&t.quic.pool_size)||'-') : '—'}</td>
+        <td class="right mono">${last && last.rtt ? Math.round(last.rtt) + 'ms' : '—'}</td>
+      </tr>`;
+    }).join('')}</tbody>`;
+}
+
+// ─────────────────────────── settings ───────────────────────────
+
+async function renderSettingsView() {
+  // Two real-data blocks: panel info + system info. Both fetched fresh
+  // each time the view opens so things like "goroutines" track reality.
+  try {
+    const [v, sys] = await Promise.all([api.version(), api.system()]);
+    const panel = document.getElementById('settings-panel-info');
+    if (panel) {
+      panel.innerHTML = `
+        <div><span class="text-3">listen:</span> ${escape(location.host)}</div>
+        <div><span class="text-3">tunnels dir:</span> ${escape(sys.tunnels_dir || '')}</div>
+        <div><span class="text-3">auth:</span> ${sys.hostname ? 'configured (basic auth)' : 'check /etc/default/ispof'}</div>
+        <div><span class="text-3">SSE clients:</span> ${state.sseConnected ? '1 (this browser)' : '0'}</div>`;
+    }
+    const info = document.getElementById('settings-system-info');
+    if (info) {
+      info.innerHTML = `
+        <div><span class="text-3">version:</span> ${escape(v.version)} (${escape(v.commit)})</div>
+        <div><span class="text-3">built:</span> ${escape(v.built)}</div>
+        <div><span class="text-3">go runtime:</span> ${escape(v.go_runtime)}</div>
+        <div><span class="text-3">target:</span> ${escape(v.goos)}/${escape(v.goarch)}</div>
+        <div><span class="text-3">hostname:</span> ${escape(sys.hostname || '')}</div>
+        <div><span class="text-3">goroutines:</span> ${sys.goroutines}</div>
+        <div><span class="text-3">server time:</span> ${new Date(sys.now_unix*1000).toISOString()}</div>
+        <div><span class="text-3">tunnels managed:</span> ${state.tunnels.length}</div>`;
+    }
+  } catch (e) {
+    const panel = document.getElementById('settings-panel-info');
+    if (panel) panel.innerHTML = `<div class="text-3">could not fetch panel info: ${escape(e.message)}</div>`;
+  }
+}
+
+// ─────────────────────────── tools view ───────────────────────────
+
+function renderToolsView() {
+  // Tools view is currently keygen-only (Spoof Tester, Bench, and pprof
+  // were mockups depending on a quiccochet admin protocol we don't bind
+  // to from here, so they were removed rather than left as deceptive
+  // placeholders). Nothing to populate dynamically.
+}
+
+// ─────────────────────────── tools: keygen ───────────────────────────
+
+async function mockKeygen() {
+  // Despite the name, this is real now — the back-end derives the pair
+  // via crypto/ecdh. The function name is kept for HTML compatibility.
+  try {
+    const kp = await api.keygen();
+    document.getElementById('keygen-result').style.display = 'block';
+    document.getElementById('kg-priv').value = kp.private_key;
+    document.getElementById('kg-pub').value = kp.public_key;
+    toast('ok', 'Key pair generated · 32-byte X25519');
+  } catch (e) {
+    toast('err', 'keygen failed: ' + e.message);
+  }
+}
+
+async function genIntoFields() {
+  try {
+    const kp = await api.keygen();
+    document.getElementById('w-priv').value = kp.private_key;
+    document.getElementById('w-pub').value = kp.public_key;
+    toast('ok', 'Key pair generated');
+  } catch (e) {
+    toast('err', 'keygen failed: ' + e.message);
+  }
+}
+
+function copyVal(id) {
+  const el = document.getElementById(id);
+  if (!el || !el.value) return;
+  navigator.clipboard.writeText(el.value).then(() => toast('ok', 'Copied to clipboard'));
+}
+
+// ─────────────────────────── new tunnel wizard ───────────────────────────
+
+function openNewTunnelModal() {
+  state.wizardStep = 1;
+  state.draft = {
+    name: '',
+    mode: 'client',
+    transport: {type: 'udp'},
+    spoof: {source_ips: [], peer_spoof_ips: []},
+    crypto: {},
+    performance: {mtu: 1400},
+    quic: {pool_size: 8, congestion_control: 'auto', packet_threshold: 128, keep_alive_period_sec: 5, max_idle_timeout_sec: 10},
+    obfuscation: {mode: 'standard'},
+    security: {block_private_targets: true},
+    logging: {level: 'info'},
+    admin: {enabled: true},
+    metrics: {enabled: true, listen: '127.0.0.1:9200'},
+  };
+  updateWizard();
+  document.getElementById('new-tunnel-modal').classList.add('open');
+}
+function closeNewTunnelModal() {
+  document.getElementById('new-tunnel-modal').classList.remove('open');
+  state.draft = null;
+}
+
+async function wizardStep(delta) {
+  if (state.wizardStep + delta >= 1 && state.wizardStep + delta <= WIZARD_MAX) {
+    captureWizardStep();
+    state.wizardStep += delta;
+  } else if (state.wizardStep === WIZARD_MAX && delta > 0) {
+    captureWizardStep();
+    // create!
+    try {
+      const created = await api.create(state.draft);
+      toast('ok', `Tunnel "${created.name}" created`);
+      closeNewTunnelModal();
+      // Refresh and navigate to the new tunnel
+      const list = await api.list();
+      state.tunnels = list.tunnels;
+      navigate('tunnel-detail', {id: created.name});
+    } catch (e) {
+      toast('err', 'create failed: ' + e.message);
+    }
+    return;
+  }
+  updateWizard();
+}
+
+// Capture form values from the current step into state.draft before
+// re-rendering. This way back-and-forth between steps preserves input.
+function captureWizardStep() {
+  const d = state.draft;
+  switch (state.wizardStep) {
+    case 1:
+      d.name = (document.getElementById('w-name')||{}).value || d.name;
+      const m = document.querySelector('.radio-card[data-w-mode].selected');
+      if (m) d.mode = m.dataset.wMode;
+      break;
+    case 2: {
+      const sel = document.querySelector('.radio-card[data-w-transport].selected');
+      if (sel) d.transport.type = sel.dataset.wTransport;
+      const icmpEl = document.querySelector('#transport-extras select');
+      if (icmpEl) d.transport.icmp_mode = icmpEl.value;
+      const protoEl = document.querySelector('#transport-extras input');
+      if (protoEl) d.transport.protocol_number = parseInt(protoEl.value, 10) || 253;
+      break;
+    }
+    case 3: {
+      const inputs = document.querySelectorAll('#network-form input');
+      if (d.mode === 'client') {
+        d.server = d.server || {};
+        if (inputs[0]) d.server.address = inputs[0].value;
+        if (inputs[1]) d.server.port = parseInt(inputs[1].value, 10);
+        if (inputs[2]) d.listen_port = parseInt(inputs[2].value, 10) || 0;
+      } else {
+        if (inputs[0]) d.listen_port = parseInt(inputs[0].value, 10) || 8080;
+      }
+      break;
+    }
+    case 4: {
+      const priv = (document.getElementById('w-priv')||{}).value;
+      const pub  = (document.getElementById('w-pub')||{}).value;
+      const peer = document.querySelectorAll('.wizard-page[data-page="4"] input')[2];
+      d.crypto.private_key = priv;
+      if (peer) d.crypto.peer_public_key = peer.value;
+      break;
+    }
+    case 5: {
+      d.spoof.source_ips = Array.from(document.querySelectorAll('.wizard-page[data-page="5"] .chip-list')[0].querySelectorAll('.chip')).map(c => c.childNodes[1].textContent.trim());
+      const peerList = document.querySelectorAll('.wizard-page[data-page="5"] .chip-list')[1];
+      if (peerList) d.spoof.peer_spoof_ips = Array.from(peerList.querySelectorAll('.chip')).map(c => c.childNodes[1].textContent.trim());
+      break;
+    }
+  }
+}
+
+function updateWizard() {
+  document.querySelectorAll('.step').forEach(s => {
+    const i = parseInt(s.dataset.step, 10);
+    s.classList.toggle('active', i === state.wizardStep);
+    s.classList.toggle('done', i < state.wizardStep);
+  });
+  document.querySelectorAll('.wizard-page').forEach(p => {
+    p.classList.toggle('active', parseInt(p.dataset.page, 10) === state.wizardStep);
+  });
+  document.getElementById('w-step').textContent = state.wizardStep;
+  document.getElementById('w-back').style.visibility = state.wizardStep === 1 ? 'hidden' : 'visible';
+  document.getElementById('w-next').textContent = state.wizardStep === WIZARD_MAX ? 'Create tunnel ✓' : 'next →';
+
+  // step-specific renders
+  if (state.wizardStep === 2) renderTransportExtras();
+  if (state.wizardStep === 3) renderNetworkForm();
+  if (state.wizardStep === 7) renderPreview();
+}
+
+function renderTransportExtras() {
+  const sel = document.querySelector('.radio-card[data-w-transport].selected');
+  const transport = sel ? sel.dataset.wTransport : 'udp';
+  let html = '';
+  if (transport === 'icmp' || transport === 'icmpv6') {
+    html = `<div class="field"><label class="field-label">icmp_mode</label><select class="select"><option>echo</option><option>reply</option></select><div class="field-hint">must be opposite of peer · server defaults to reply</div></div>`;
+  } else if (transport === 'raw') {
+    html = `<div class="field"><label class="field-label">protocol_number</label><input class="input" placeholder="253" value="253"/><div class="field-hint">1-255 · use unassigned (253/254)</div></div>`;
+  }
+  document.getElementById('transport-extras').innerHTML = html;
+}
+
+function renderNetworkForm() {
+  const sel = document.querySelector('.radio-card[data-w-mode].selected');
+  const mode = sel ? sel.dataset.wMode : 'client';
+  document.getElementById('network-form').innerHTML = mode === 'client' ? `
+    <div class="field"><label class="field-label">Server address</label><input class="input" placeholder="203.0.113.99"/></div>
+    <div class="field"><label class="field-label">Server port</label><input class="input" value="8080"/></div>
+    <div class="field"><label class="field-label">Local listen_port</label><input class="input" value="0"/><div class="field-hint">0 = dynamic</div></div>` : `
+    <div class="field"><label class="field-label">Listen port</label><input class="input" value="8080"/></div>
+    <div class="field"><label class="field-label">Bind address (optional)</label><input class="input" placeholder="0.0.0.0"/></div>`;
+}
+
+function renderPreview() {
+  // Capture step-by-step then show what we'll POST
+  captureWizardStep();
+  const json = JSON.stringify(state.draft, null, 2);
+  document.getElementById('w-preview').textContent = json;
+}
+
+document.querySelectorAll('.radio-card').forEach(c => {
+  c.addEventListener('click', () => {
+    const group = c.parentElement;
+    group.querySelectorAll('.radio-card').forEach(x => x.classList.remove('selected'));
+    c.classList.add('selected');
+    if (c.dataset.wTransport) renderTransportExtras();
+    if (c.dataset.wMode) renderNetworkForm();
+  });
+});
+
+// ─────────────────────────── escape helpers ───────────────────────────
+// Untrusted strings (tunnel names from disk, log lines from journalctl)
+// pass through these on the way into the DOM.
+
+function escape(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function escapeAttr(s) {
+  return escape(s).replace(/`/g, '&#96;');
+}
+
+// ─────────────────────────── live clock ───────────────────────────
+
+function tick() {
+  document.getElementById('clock').textContent = new Date().toTimeString().slice(0, 8);
+}
+setInterval(tick, 1000); tick();
+
+// ─────────────────────────── boot ───────────────────────────
+
+(async function init() {
+  try {
+    const data = await api.list();
+    state.tunnels = data.tunnels || [];
+  } catch (e) {
+    toast('err', 'failed to load tunnels: ' + e.message);
+  }
+  renderCurrentView();
+  connectSSE();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+[Unit]
+Description=Ispof Admin Panel
+Documentation=https://github.com/TheMojtabam/ispof
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ispof
+Group=ispof
+# The panel reads its tunnel configs from /etc/ispof/tunnels and writes
+# private keys to /etc/ispof/keys. It needs CAP_NET_BIND_SERVICE only if
+# you bind it below port 1024 — by default we bind to 127.0.0.1:2095.
+#
+# The -auth flag is REQUIRED for any non-loopback bind. Override via
+# /etc/default/ispof if you want different flags without editing this file.
+EnvironmentFile=-/etc/default/ispof
+ExecStart=/usr/local/bin/ispof \
+    --listen ${ISPOF_LISTEN} \
+    --tunnels-dir /etc/ispof/tunnels \
+    --keys-dir /etc/ispof/keys \
+    --log-level ${ISPOF_LOG_LEVEL} \
+    --auth ${ISPOF_AUTH}
+
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65535
+
+# Hardening — the panel does not need to write outside its data dirs.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/etc/ispof
+# We need to be able to invoke systemctl/journalctl on the host
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+
+[Install]
+WantedBy=multi-user.target
